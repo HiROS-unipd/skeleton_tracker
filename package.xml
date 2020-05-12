@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>hiros_skeleton_tracker</name>
+  <version>0.1.0</version>
+  <description>Hi-ROS mantained skeleton tracker package</description>
+  <maintainer email="mattia.guidolin@phd.unipd.it">mguidolin @ Hi-ROS</maintainer>
+  <maintainer email="luca.tagliapietra@unipd.it">lucaTagliapietra @ Hi-ROS</maintainer>
+  <license>TODO</license>
+
+  <url type="website">https://gitlab.com/hi-ros</url>
+  <author email="mattia.guidolin@phd.unipd.it">Mattia Guidolin</author>
+  <author email="luca.tagliapietra@unipd.it">Luca Tagliapietra</author>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>skeleton_msgs</depend>
+</package>

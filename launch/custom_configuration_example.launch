@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="node_name"     default="node_01" />
+
+  <!--************************************************************-->
+  <!-- Hi-Ros Skeleton Tracking Node: Parameters override and Run -->
+  <!--************************************************************-->
+  <include file="$(find hiros_skeleton_tracker)/launch/hiros_skeleton_tracker_default.launch">
+    <arg name="hiros_skeleton_tracker_node_required" value="true"                                           />
+    <arg name="node_name"                            value="$(arg node_name)"                               />
+
+    <arg name="in_skeleton_group_topic"              value="/hiros/opw/$(arg node_name)/qhd/skeleton_group" />
+    <arg name="out_msg_topic_name"                   value="skeleton_group"                                 />
+
+    <arg name="min_keypoints"                        value="7"                                              />
+    <arg name="max_distance"                         value="100"                                            />
+    <arg name="max_delta_t"                          value="0.05"                                           />
+  </include>
+
+</launch>
