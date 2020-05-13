@@ -211,7 +211,8 @@ void hiros::track::Tracker::removeUnassociatedTracks()
 {
   ros::Duration delta_t;
 
-  for (int track_idx = 0, index_to_erase = 0; track_idx < m_munkres_matrix.rows; ++track_idx, ++index_to_erase) {
+  for (int track_idx = 0, index_to_erase = 0; track_idx < static_cast<int>(m_tracks->skeletons.size());
+       ++track_idx, ++index_to_erase) {
     if (unassociatedTrack(static_cast<unsigned int>(track_idx))) {
       delta_t = m_skeleton_group_src_time
                 - m_track_id_to_time_stamp_map.at(m_tracks->skeletons.at(static_cast<unsigned int>(index_to_erase)).id);
