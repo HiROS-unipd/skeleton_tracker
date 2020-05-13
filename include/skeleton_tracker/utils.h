@@ -14,6 +14,7 @@ namespace hiros {
       bool isNaN(const cv::Mat_<double>& t_mat);
       double max(const cv::Mat_<double>& t_mat);
       void replaceNansWithMax(cv::Mat_<double>& t_mat);
+      void replaceNans(cv::Mat_<double>& t_mat);
 
       bool isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton);
       int numberOfKeypoints(const hiros::skeletons::types::Skeleton& t_skeleton);

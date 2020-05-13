@@ -42,6 +42,16 @@ void hiros::track::utils::replaceNansWithMax(cv::Mat_<double>& t_mat)
   }
 }
 
+void hiros::track::utils::replaceNans(cv::Mat_<double>& t_mat)
+{
+  if (isNaN(t_mat)) {
+    t_mat.setTo(std::numeric_limits<double>::max());
+  }
+  else {
+    utils::replaceNansWithMax(t_mat);
+  }
+}
+
 bool hiros::track::utils::isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton)
 {
   bool is_empty = true;
