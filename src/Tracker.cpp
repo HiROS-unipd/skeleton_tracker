@@ -120,7 +120,6 @@ void hiros::track::Tracker::trackingCallback(const skeleton_msgs::SkeletonGroupC
 void hiros::track::Tracker::track()
 {
   fillDetections();
-  createDistanceMatrix();
   createCostMatrix();
   solveMunkres();
   removeDistantMatches();
@@ -139,32 +138,24 @@ void hiros::track::Tracker::fillDetections()
   }
 }
 
-void hiros::track::Tracker::createDistanceMatrix()
+void hiros::track::Tracker::createCostMatrix()
 {
   if (m_tracks->skeletons.empty() || m_detections->skeletons.empty()) {
-    m_distance_matrix = cv::Mat_<double>();
+    m_cost_matrix = cv::Mat_<double>();
+    return;
   }
 
-  m_distance_matrix =
+  m_cost_matrix =
     cv::Mat_<double>(static_cast<int>(m_tracks->skeletons.size()), static_cast<int>(m_detections->skeletons.size()));
 
   for (unsigned int track_idx = 0; track_idx < m_tracks->skeletons.size(); ++track_idx) {
     for (unsigned int det_idx = 0; det_idx < m_detections->skeletons.size(); ++det_idx) {
-      m_distance_matrix(static_cast<int>(track_idx), static_cast<int>(det_idx)) =
+      m_cost_matrix(static_cast<int>(track_idx), static_cast<int>(det_idx)) =
         computeDistance(m_tracks->skeletons.at(track_idx), m_detections->skeletons.at(det_idx));
     }
   }
-}
 
-void hiros::track::Tracker::createCostMatrix()
-{
-  if (utils::isNaN(m_distance_matrix)) {
-    m_cost_matrix = cv::Mat_<double>(m_distance_matrix.size(), std::numeric_limits<double>::max());
-  }
-  else {
-    m_cost_matrix = m_distance_matrix.clone();
-    utils::replaceNansWithMax(m_cost_matrix);
-  }
+  utils::replaceNans(m_cost_matrix);
 }
 
 void hiros::track::Tracker::solveMunkres()
@@ -179,7 +170,7 @@ void hiros::track::Tracker::removeDistantMatches()
   if (m_params.max_distance >= 0.) {
     for (int r = 0; r < m_munkres_matrix.rows; ++r) {
       for (int c = 0; c < m_munkres_matrix.cols; ++c) {
-        if (m_munkres_matrix(r, c) == 1 && m_distance_matrix(r, c) > m_params.max_distance) {
+        if (m_munkres_matrix(r, c) == 1 && m_cost_matrix(r, c) > m_params.max_distance) {
           m_munkres_matrix(r, c) = 0;
         }
       }

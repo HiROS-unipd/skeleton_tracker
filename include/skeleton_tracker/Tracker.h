@@ -50,7 +50,6 @@ namespace hiros {
       void track();
 
       void fillDetections();
-      void createDistanceMatrix();
       void createCostMatrix();
       void solveMunkres();
       void removeDistantMatches();
@@ -82,7 +81,6 @@ namespace hiros {
       ros::Time m_skeleton_group_src_time;
       skeletons::types::SkeletonGroup m_skeleton_group;
 
-      cv::Mat_<double> m_distance_matrix;
       cv::Mat_<double> m_cost_matrix;
       cv::Mat_<int> m_munkres_matrix;
       int m_last_track_id;
