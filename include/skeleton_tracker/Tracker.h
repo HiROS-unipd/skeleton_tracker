@@ -86,8 +86,8 @@ namespace hiros {
       int m_last_track_id;
 
       std::map<int, ros::Time> m_track_id_to_time_stamp_map;
-      std::shared_ptr<skeletons::types::SkeletonGroup> m_tracks;
-      std::shared_ptr<skeletons::types::SkeletonGroup> m_detections;
+      skeletons::types::SkeletonGroup m_tracks;
+      skeletons::types::SkeletonGroup m_detections;
 
       bool m_configured;
     };
