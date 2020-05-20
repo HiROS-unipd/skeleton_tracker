@@ -13,6 +13,9 @@
 // Custom External Packages dependencies
 #include "skeletons/types.h"
 
+// Custom Internal dependencies
+#include "skeleton_tracker/Munkres.h"
+
 #define BASH_MSG_RESET "\033[0m"
 #define BASH_MSG_GREEN "\033[32m"
 
@@ -81,6 +84,7 @@ namespace hiros {
       ros::Time m_skeleton_group_src_time;
       skeletons::types::SkeletonGroup m_skeleton_group;
 
+      Munkres m_munkres;
       cv::Mat_<double> m_cost_matrix;
       cv::Mat_<int> m_munkres_matrix;
       int m_last_track_id;

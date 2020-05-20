@@ -6,71 +6,72 @@
 
 namespace hiros {
   namespace track {
-    namespace utils {
 
-      class Munkres
+    class Munkres
+    {
+    public:
+      Munkres();
+      ~Munkres();
+
+      cv::Mat_<int> solve(const cv::Mat_<double>& t_matrix, const bool& t_min = true);
+
+    private:
+      enum Step
       {
-      public:
-        cv::Mat_<int> solve(const cv::Mat_<double>& t_matrix, bool t_min = true);
-
-      private:
-        enum Step
-        {
-          one,
-          two,
-          three,
-          four,
-          five,
-          six,
-          done
-        };
-
-        void preprocess(const cv::Mat_<double>& t_matrix_in, bool t_min);
-        void initializeMemory();
-        void releaseMemory();
-        double getMaxValue();
-
-        void stepOne();
-        void stepTwo();
-        void stepThree();
-        void stepFour();
-        void stepFive();
-        void stepSix();
-
-        double getMinInRow(int t_row);
-        void findZero(int& t_row, int& t_col);
-        int findZeroInRow(int t_row);
-        bool starInRow(int t_row);
-        int findStarInRow(int t_row);
-        int findStarInCol(int t_col);
-        int findPrimeInRow(int t_row);
-        void augmentPath();
-        void clearCovers();
-        void erasePrimes();
-        double getMinValue();
-
-        cv::Mat_<double> m_matrix_in_padded;
-
-        double** m_matrix_in;
-        int** m_matrix_out;
-
-        int m_max_dim;
-        int m_rows;
-        int m_cols;
-
-        int* m_row_cover;
-        int* m_col_cover;
-
-        int m_path_row_0 = 0;
-        int m_path_col_0 = 0;
-        int m_path_count = 0;
-
-        int** m_path;
-
-        Step m_step = one;
+        one,
+        two,
+        three,
+        four,
+        five,
+        six,
+        done
       };
 
-    } // namespace utils
+      void preprocess(const cv::Mat_<double>& t_matrix_in, const bool& t_min);
+      void initializeVectors();
+
+      void stepOne();
+      void stepTwo();
+      void stepThree();
+      void stepFour();
+      void stepFive();
+      void stepSix();
+
+      double getMaxValue(const std::vector<std::vector<double>>& t_mat) const;
+      double getMaxValue(const cv::Mat_<double>& t_mat) const;
+      double getMinInRow(const unsigned int& t_row) const;
+      void findZero(int& t_row, int& t_col) const;
+      int findZeroInRow(const unsigned int& t_row) const;
+      bool starInRow(const unsigned int& t_row) const;
+      int findStarInRow(const unsigned int& t_row) const;
+      int findStarInCol(const unsigned int& t_col) const;
+      int findPrimeInRow(const unsigned int& t_row) const;
+      double getMinValue() const;
+      void augmentPath();
+      void clearCovers();
+      void erasePrimes();
+
+      cv::Mat_<double> m_matrix_in_padded;
+
+      std::vector<std::vector<double>> m_matrix_in;
+      std::vector<std::vector<int>> m_matrix_out;
+
+      unsigned int m_max_dim;
+      unsigned int m_rows;
+      unsigned int m_cols;
+
+      std::vector<unsigned int> m_row_cover;
+      std::vector<unsigned int> m_col_cover;
+
+      unsigned int m_path_row_0;
+      unsigned int m_path_col_0;
+      unsigned int m_path_count;
+
+      std::vector<std::vector<unsigned int>> m_path;
+
+      Step m_step;
+    };
+
   } // namespace track
 } // namespace hiros
 #endif

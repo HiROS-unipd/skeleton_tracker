@@ -10,7 +10,6 @@
 #include "skeletons/utils.h"
 
 // Internal dependencies
-#include "skeleton_tracker/Munkres.h"
 #include "skeleton_tracker/Tracker.h"
 #include "skeleton_tracker/utils.h"
 
@@ -160,9 +159,8 @@ void hiros::track::Tracker::createCostMatrix()
 
 void hiros::track::Tracker::solveMunkres()
 {
-  utils::Munkres munkres;
   // Munkres: rows = tracks, cols = detections
-  m_munkres_matrix = munkres.solve(m_cost_matrix);
+  m_munkres_matrix = m_munkres.solve(m_cost_matrix);
 }
 
 void hiros::track::Tracker::removeDistantMatches()
