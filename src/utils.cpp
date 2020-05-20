@@ -104,13 +104,13 @@ hiros::skeletons::types::Keypoint hiros::track::utils::findKeypoint(const hiros:
   return hiros::skeletons::types::Keypoint();
 }
 
-double hiros::track::utils::distance(const hiros::skeletons::types::Point& t_p1,
-                                     const hiros::skeletons::types::Point& t_p2)
+double hiros::track::utils::distance(const hiros::skeletons::types::Vector& t_v1,
+                                     const hiros::skeletons::types::Vector& t_v2)
 {
-  double squared_dist = std::pow((t_p1.x - t_p2.x), 2) + std::pow((t_p1.y - t_p2.y), 2);
+  double squared_dist = std::pow((t_v1.x - t_v2.x), 2) + std::pow((t_v1.y - t_v2.y), 2);
 
-  if (!std::isnan(t_p1.z) && !std::isnan(t_p2.z)) {
-    squared_dist += std::pow((t_p1.z - t_p1.z), 2);
+  if (!std::isnan(t_v1.z) && !std::isnan(t_v2.z)) {
+    squared_dist += std::pow((t_v1.z - t_v2.z), 2);
   }
 
   return std::sqrt(squared_dist);

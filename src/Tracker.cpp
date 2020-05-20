@@ -232,8 +232,8 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
     for (auto& det_kp : det_kpg.keypoints) {
       hiros::skeletons::types::Keypoint track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
 
-      if (!std::isnan(track_kp.point.x) && !std::isnan(track_kp.point.y)) {
-        dist += utils::distance(det_kp.point, track_kp.point);
+      if (!std::isnan(track_kp.point.position.x) && !std::isnan(track_kp.point.position.y)) {
+        dist += utils::distance(det_kp.point.position, track_kp.point.position);
         ++n_kps;
       }
     }

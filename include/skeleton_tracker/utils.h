@@ -21,7 +21,7 @@ namespace hiros {
       hiros::skeletons::types::Keypoint findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
                                                      const int& t_keypoint_group_id,
                                                      const int& t_keypoint_id);
-      double distance(const hiros::skeletons::types::Point& t_p1, const hiros::skeletons::types::Point& t_p2);
+      double distance(const hiros::skeletons::types::Vector& t_v1, const hiros::skeletons::types::Vector& t_v2);
 
     } // namespace utils
   } // namespace track
