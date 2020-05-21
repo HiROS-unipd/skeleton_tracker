@@ -65,11 +65,16 @@ namespace hiros {
 
       double computeDistance(const hiros::skeletons::types::Skeleton& t_track,
                              hiros::skeletons::types::Skeleton& t_detection);
+      void computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
+                            hiros::skeletons::types::Skeleton& t_detection);
       void computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
                              hiros::skeletons::types::Skeleton& t_detection);
       hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::Point& t_prev,
                                                         const hiros::skeletons::types::Point& t_curr,
                                                         const double& t_dt);
+      hiros::skeletons::types::Acceleration computeAcceleration(const hiros::skeletons::types::Point& t_prev,
+                                                                const hiros::skeletons::types::Point& t_curr,
+                                                                const double& t_dt);
       void updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx);
       void addNewTrack(const hiros::skeletons::types::Skeleton& t_detection);
       bool unassociatedDetection(const unsigned int& t_det_idx) const;

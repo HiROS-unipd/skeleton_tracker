@@ -77,11 +77,12 @@ int hiros::track::utils::numberOfKeypoints(const hiros::skeletons::types::Skelet
   return n_kps;
 }
 
-void hiros::track::utils::initializeVelocities(hiros::skeletons::types::Skeleton& t_skeleton)
+void hiros::track::utils::initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton)
 {
   for (auto& kpg : t_skeleton.skeleton_parts) {
     for (auto& kp : kpg.keypoints) {
       kp.point.velocity = hiros::skeletons::types::Velocity();
+      kp.point.acceleration = hiros::skeletons::types::Acceleration();
     }
   }
 }

@@ -274,6 +274,23 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
                                        : std::numeric_limits<double>::quiet_NaN();
 }
 
+void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
+                                             hiros::skeletons::types::Skeleton& t_detection)
+{
+  double dt = (m_skeleton_group_src_time - m_track_id_to_time_stamp_map.at(t_track.id)).toSec();
+
+  for (auto& det_kpg : t_detection.skeleton_parts) {
+    for (auto& det_kp : det_kpg.keypoints) {
+      hiros::skeletons::types::Keypoint track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
+
+      if (!std::isnan(track_kp.point.position.x) && !std::isnan(track_kp.point.position.y)) {
+        det_kp.point.velocity = computeVelocity(track_kp.point, det_kp.point, dt);
+        det_kp.point.acceleration = computeAcceleration(track_kp.point, det_kp.point, dt);
+      }
+    }
+  }
+}
+
 void hiros::track::Tracker::computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
                                               hiros::skeletons::types::Skeleton& t_detection)
 {
@@ -299,10 +316,20 @@ hiros::skeletons::types::Velocity hiros::track::Tracker::computeVelocity(const h
                                            (t_curr.position.z - t_prev.position.z) / t_dt);
 }
 
+hiros::skeletons::types::Acceleration
+hiros::track::Tracker::computeAcceleration(const hiros::skeletons::types::Point& t_prev,
+                                           const hiros::skeletons::types::Point& t_curr,
+                                           const double& t_dt)
+{
+  return hiros::skeletons::types::Acceleration((t_curr.velocity.x - t_prev.velocity.x) / t_dt,
+                                               (t_curr.velocity.y - t_prev.velocity.y) / t_dt,
+                                               (t_curr.velocity.z - t_prev.velocity.z) / t_dt);
+}
+
 void hiros::track::Tracker::updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx)
 {
   if (match(t_track_idx, t_det_idx)) {
-    computeVelocities(m_tracks.skeletons.at(t_track_idx), m_detections.skeletons.at(t_det_idx));
+    computeVelAndAcc(m_tracks.skeletons.at(t_track_idx), m_detections.skeletons.at(t_det_idx));
     int id = m_tracks.skeletons.at(t_track_idx).id;
     m_track_id_to_time_stamp_map.at(id) = m_skeleton_group_src_time;
     m_tracks.skeletons.at(t_track_idx) = m_detections.skeletons.at(t_det_idx);
@@ -315,7 +342,7 @@ void hiros::track::Tracker::addNewTrack(const hiros::skeletons::types::Skeleton&
   if (utils::numberOfKeypoints(t_detection) >= m_params.min_keypoints) {
     m_tracks.skeletons.push_back(t_detection);
     m_tracks.skeletons.back().id = ++m_last_track_id;
-    utils::initializeVelocities(m_tracks.skeletons.back());
+    utils::initializeVelAndAcc(m_tracks.skeletons.back());
 
     m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_group_src_time);
   }
