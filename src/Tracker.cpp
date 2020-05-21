@@ -51,6 +51,7 @@ void hiros::track::Tracker::configure()
   m_nh.getParam("use_keypoint_positions", m_params.use_keypoint_positions);
   m_nh.getParam("use_keypoint_velocities", m_params.use_keypoint_velocities);
   m_nh.getParam("velocity_weight", m_params.velocity_weight);
+  m_nh.getParam("weight_distances_by_velocities", m_params.weight_distances_by_velocities);
 
   if (!m_params.use_keypoint_positions && !m_params.use_keypoint_velocities) {
     ROS_FATAL_STREAM("Position based distance and/or velocity based distance must be enabled. Unable to continue");
@@ -234,7 +235,7 @@ void hiros::track::Tracker::removeUnassociatedTracks()
 double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Skeleton& t_track,
                                               hiros::skeletons::types::Skeleton& t_detection)
 {
-  if (m_params.use_keypoint_velocities) {
+  if (m_params.use_keypoint_velocities || m_params.weight_distances_by_velocities) {
     computeVelocities(t_track, t_detection);
   }
 
@@ -242,20 +243,28 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
   double vel_dist = 0;
   unsigned int pos_n_kps = 0;
   unsigned int vel_n_kps = 0;
+  double weight;
 
   for (auto& det_kpg : t_detection.skeleton_parts) {
     for (auto& det_kp : det_kpg.keypoints) {
       hiros::skeletons::types::Keypoint track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
 
+      weight = 1;
+      if (m_params.weight_distances_by_velocities && !std::isnan(track_kp.point.velocity.x)
+          && !std::isnan(track_kp.point.velocity.y)) {
+        // Elevate velocity magnitude to the power of 0.25 to have smoother weights
+        weight = std::pow(1 + utils::magnitude(track_kp.point.velocity), -0.25);
+      }
+
       if (m_params.use_keypoint_positions && !std::isnan(track_kp.point.position.x)
           && !std::isnan(track_kp.point.position.y)) {
-        pos_dist += utils::distance(det_kp.point.position, track_kp.point.position);
+        pos_dist += (weight * utils::distance(det_kp.point.position, track_kp.point.position));
         ++pos_n_kps;
       }
 
       if (m_params.use_keypoint_velocities && !std::isnan(track_kp.point.velocity.x)
           && !std::isnan(track_kp.point.velocity.y)) {
-        vel_dist += utils::distance(det_kp.point.velocity, track_kp.point.velocity);
+        vel_dist += (weight * utils::distance(det_kp.point.velocity, track_kp.point.velocity));
         ++vel_n_kps;
       }
     }

@@ -22,6 +22,7 @@ namespace hiros {
       hiros::skeletons::types::Keypoint findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
                                                      const int& t_keypoint_group_id,
                                                      const int& t_keypoint_id);
+      double magnitude(const hiros::skeletons::types::Vector& t_v);
       double distance(const hiros::skeletons::types::Vector& t_v1, const hiros::skeletons::types::Vector& t_v2);
 
     } // namespace utils

@@ -16,6 +16,7 @@
   <arg name="use_keypoint_positions"         default="true"  />
   <arg name="use_keypoint_velocities"        default="false" />
   <arg name="velocity_weight"                default="0"     />
+  <arg name="weight_distances_by_velocities" default="false" />
 
   <!--*******************************-->
   <!-- Hi-Ros OpenPose Tracking Node -->
@@ -32,6 +33,7 @@
     <param name="use_keypoint_positions"         type="bool"   value="$(arg use_keypoint_positions)"         />
     <param name="use_keypoint_velocities"        type="bool"   value="$(arg use_keypoint_velocities)"        />
     <param name="velocity_weight"                type="double" value="$(arg velocity_weight)"                />
+    <param name="weight_distances_by_velocities" type="bool"   value="$(arg weight_distances_by_velocities)" />
   </node>
 
 </launch>

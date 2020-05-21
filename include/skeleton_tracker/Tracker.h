@@ -35,6 +35,7 @@ namespace hiros {
       bool use_keypoint_positions;
       bool use_keypoint_velocities;
       double velocity_weight;
+      bool weight_distances_by_velocities;
     };
 
     class Tracker

@@ -114,6 +114,11 @@ hiros::skeletons::types::Keypoint hiros::track::utils::findKeypoint(const hiros:
   return hiros::skeletons::types::Keypoint();
 }
 
+double hiros::track::utils::magnitude(const hiros::skeletons::types::Vector& t_v)
+{
+  return distance(t_v, hiros::skeletons::types::Vector(0, 0, 0));
+}
+
 double hiros::track::utils::distance(const hiros::skeletons::types::Vector& t_v1,
                                      const hiros::skeletons::types::Vector& t_v2)
 {
