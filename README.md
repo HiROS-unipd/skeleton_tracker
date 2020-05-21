@@ -20,3 +20,12 @@ This ROS package takes as input the skeletons detected by [openpose\_wrapper](ht
 ```
 roslaunch hiros_openpose_wrapper custom_configuration_example.launch
 ```
+
+## Parameters
+* **min_keypoints**: Minimum number of keypoints to be detected to begin tracking
+* **max_distance**: Maximum acceptable distance between track and detection
+* **max_delta_t**: Maximum acceptable time delta between track and detection
+* **use_keypoint_positions**: Calculate distances based on the keypoint positions
+* **use_keypoint_velocities**: Calculate distances based on the keypoint velocities
+* **velocity_weight**: Constant weight to apply to the distance calculated on the velocities
+* **weight_distances_by_velocities**: Weight the distance of each pair of keypoints w.r.t. the inverse of the track's velocity
