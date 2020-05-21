@@ -43,7 +43,7 @@ void hiros::track::Tracker::configure()
     ros::shutdown();
   }
 
-  double max_delta_t = 0.;
+  double max_delta_t = 0;
   m_nh.getParam("min_keypoints", m_params.min_keypoints);
   m_nh.getParam("max_distance", m_params.max_distance);
   m_nh.getParam("max_delta_t", max_delta_t);
@@ -174,7 +174,7 @@ void hiros::track::Tracker::solveMunkres()
 
 void hiros::track::Tracker::removeDistantMatches()
 {
-  if (m_params.max_distance >= 0.) {
+  if (m_params.max_distance >= 0) {
     for (int r = 0; r < m_munkres_matrix.rows; ++r) {
       for (int c = 0; c < m_munkres_matrix.cols; ++c) {
         if (m_munkres_matrix(r, c) == 1 && m_cost_matrix(r, c) > m_params.max_distance) {

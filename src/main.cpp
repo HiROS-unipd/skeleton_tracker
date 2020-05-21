@@ -10,7 +10,6 @@ int main(int argc, char* argv[])
   ros::init(argc, argv, node_name);
 
   hiros::track::Tracker tracker;
-  tracker.configure();
   tracker.start();
 
   ros::spin();
