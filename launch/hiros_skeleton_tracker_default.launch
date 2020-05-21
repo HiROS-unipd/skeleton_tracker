@@ -7,25 +7,31 @@
   <!--************************************-->
   <!-- Hi-Ros Skeleton Tracker Parameters -->
   <!--************************************-->
-  <arg name="in_skeleton_group_topic" default=""      />
-  <arg name="out_msg_topic_name"      default="track" />
-
-  <arg name="min_keypoints"           default="0"     />
-  <arg name="max_distance"            default="-1"    />
-  <arg name="max_delta_t"             default="0"     />
+  <arg name="in_skeleton_group_topic"        default=""      />
+  <arg name="out_msg_topic_name"             default="track" />
+      
+  <arg name="min_keypoints"                  default="0"     />
+  <arg name="max_distance"                   default="-1"    />
+  <arg name="max_delta_t"                    default="0"     />
+  <arg name="use_keypoint_positions"         default="true"  />
+  <arg name="use_keypoint_velocities"        default="false" />
+  <arg name="velocity_weight"                default="0"     />
 
   <!--*******************************-->
   <!-- Hi-Ros OpenPose Tracking Node -->
   <!--*******************************-->
   <node pkg="hiros_skeleton_tracker" type="hiros_skeleton_tracker" ns="hiros/st" name="$(arg node_name)" output="screen" required="$(arg hiros_skeleton_tracker_node_required)">
-    <param name="node_name"               type="str"    value="$(arg node_name)"               />
+    <param name="node_name"                      type="str"    value="$(arg node_name)"                      />
 
-    <param name="in_skeleton_group_topic" type="str"    value="$(arg in_skeleton_group_topic)" />
-    <param name="out_msg_topic_name"      type="str"    value="$(arg out_msg_topic_name)"      />
+    <param name="in_skeleton_group_topic"        type="str"    value="$(arg in_skeleton_group_topic)"        />
+    <param name="out_msg_topic_name"             type="str"    value="$(arg out_msg_topic_name)"             />
 
-    <param name="min_keypoints"           type="int"    value="$(arg min_keypoints)"           />
-    <param name="max_distance"            type="double" value="$(arg max_distance)"            />
-    <param name="max_delta_t"             type="double" value="$(arg max_delta_t)"             />
+    <param name="min_keypoints"                  type="int"    value="$(arg min_keypoints)"                  />
+    <param name="max_distance"                   type="double" value="$(arg max_distance)"                   />
+    <param name="max_delta_t"                    type="double" value="$(arg max_delta_t)"                    />
+    <param name="use_keypoint_positions"         type="bool"   value="$(arg use_keypoint_positions)"         />
+    <param name="use_keypoint_velocities"        type="bool"   value="$(arg use_keypoint_velocities)"        />
+    <param name="velocity_weight"                type="double" value="$(arg velocity_weight)"                />
   </node>
 
 </launch>

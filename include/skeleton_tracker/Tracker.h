@@ -32,6 +32,9 @@ namespace hiros {
       int min_keypoints;
       double max_distance;
       ros::Duration max_delta_t;
+      bool use_keypoint_positions;
+      bool use_keypoint_velocities;
+      double velocity_weight;
     };
 
     class Tracker
@@ -61,7 +64,12 @@ namespace hiros {
       void removeUnassociatedTracks();
 
       double computeDistance(const hiros::skeletons::types::Skeleton& t_track,
-                             const hiros::skeletons::types::Skeleton& t_detection) const;
+                             hiros::skeletons::types::Skeleton& t_detection);
+      void computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
+                             hiros::skeletons::types::Skeleton& t_detection);
+      hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::Point& t_prev,
+                                                        const hiros::skeletons::types::Point& t_curr,
+                                                        const double& t_dt);
       void updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx);
       void addNewTrack(const hiros::skeletons::types::Skeleton& t_detection);
       bool unassociatedDetection(const unsigned int& t_det_idx) const;

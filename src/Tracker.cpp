@@ -48,6 +48,14 @@ void hiros::track::Tracker::configure()
   m_nh.getParam("max_distance", m_params.max_distance);
   m_nh.getParam("max_delta_t", max_delta_t);
   m_params.max_delta_t = ros::Duration(max_delta_t);
+  m_nh.getParam("use_keypoint_positions", m_params.use_keypoint_positions);
+  m_nh.getParam("use_keypoint_velocities", m_params.use_keypoint_velocities);
+  m_nh.getParam("velocity_weight", m_params.velocity_weight);
+
+  if (!m_params.use_keypoint_positions && !m_params.use_keypoint_velocities) {
+    ROS_FATAL_STREAM("Position based distance and/or velocity based distance must be enabled. Unable to continue");
+    ros::shutdown();
+  }
 
   m_configured = true;
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...CONFIGURED" << BASH_MSG_RESET);
@@ -224,28 +232,77 @@ void hiros::track::Tracker::removeUnassociatedTracks()
 }
 
 double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                              const hiros::skeletons::types::Skeleton& t_detection) const
+                                              hiros::skeletons::types::Skeleton& t_detection)
 {
-  double dist = 0.;
-  unsigned int n_kps = 0;
+  if (m_params.use_keypoint_velocities) {
+    computeVelocities(t_track, t_detection);
+  }
+
+  double pos_dist = 0;
+  double vel_dist = 0;
+  unsigned int pos_n_kps = 0;
+  unsigned int vel_n_kps = 0;
+
+  for (auto& det_kpg : t_detection.skeleton_parts) {
+    for (auto& det_kp : det_kpg.keypoints) {
+      hiros::skeletons::types::Keypoint track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
+
+      if (m_params.use_keypoint_positions && !std::isnan(track_kp.point.position.x)
+          && !std::isnan(track_kp.point.position.y)) {
+        pos_dist += utils::distance(det_kp.point.position, track_kp.point.position);
+        ++pos_n_kps;
+      }
+
+      if (m_params.use_keypoint_velocities && !std::isnan(track_kp.point.velocity.x)
+          && !std::isnan(track_kp.point.velocity.y)) {
+        vel_dist += utils::distance(det_kp.point.velocity, track_kp.point.velocity);
+        ++vel_n_kps;
+      }
+    }
+  }
+
+  // Divide the average distance by n_kps^0.25 to prefer track-detection matches that have an higher number of keypoints
+  // in common
+  if (pos_n_kps > 0) {
+    pos_dist /= std::pow(pos_n_kps, 1.25);
+  }
+  if (vel_n_kps > 0) {
+    vel_dist /= std::pow(vel_n_kps, 1.25);
+  }
+
+  return ((pos_n_kps + vel_n_kps) > 0) ? pos_dist + m_params.velocity_weight * vel_dist
+                                       : std::numeric_limits<double>::quiet_NaN();
+}
+
+void hiros::track::Tracker::computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
+                                              hiros::skeletons::types::Skeleton& t_detection)
+{
+  double dt = (m_skeleton_group_src_time - m_track_id_to_time_stamp_map.at(t_track.id)).toSec();
+
   for (auto& det_kpg : t_detection.skeleton_parts) {
     for (auto& det_kp : det_kpg.keypoints) {
       hiros::skeletons::types::Keypoint track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
 
       if (!std::isnan(track_kp.point.position.x) && !std::isnan(track_kp.point.position.y)) {
-        dist += utils::distance(det_kp.point.position, track_kp.point.position);
-        ++n_kps;
+        det_kp.point.velocity = computeVelocity(track_kp.point, det_kp.point, dt);
       }
     }
   }
+}
 
-  // Multiplying by 1/n_kps^0.5 to prefer track-detection matching when the number of detected keypoints is higher
-  return dist = (n_kps == 0) ? std::numeric_limits<double>::quiet_NaN() : dist / std::pow(n_kps, 1.5);
+hiros::skeletons::types::Velocity hiros::track::Tracker::computeVelocity(const hiros::skeletons::types::Point& t_prev,
+                                                                         const hiros::skeletons::types::Point& t_curr,
+                                                                         const double& t_dt)
+{
+  return hiros::skeletons::types::Velocity((t_curr.position.x - t_prev.position.x) / t_dt,
+                                           (t_curr.position.y - t_prev.position.y) / t_dt,
+                                           (t_curr.position.z - t_prev.position.z) / t_dt);
 }
 
 void hiros::track::Tracker::updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx)
 {
   if (match(t_track_idx, t_det_idx)) {
+    computeVelocities(m_tracks.skeletons.at(t_track_idx), m_detections.skeletons.at(t_det_idx));
     int id = m_tracks.skeletons.at(t_track_idx).id;
     m_track_id_to_time_stamp_map.at(id) = m_skeleton_group_src_time;
     m_tracks.skeletons.at(t_track_idx) = m_detections.skeletons.at(t_det_idx);
@@ -258,6 +315,8 @@ void hiros::track::Tracker::addNewTrack(const hiros::skeletons::types::Skeleton&
   if (utils::numberOfKeypoints(t_detection) >= m_params.min_keypoints) {
     m_tracks.skeletons.push_back(t_detection);
     m_tracks.skeletons.back().id = ++m_last_track_id;
+    utils::initializeVelocities(m_tracks.skeletons.back());
+
     m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_group_src_time);
   }
 }

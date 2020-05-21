@@ -77,6 +77,15 @@ int hiros::track::utils::numberOfKeypoints(const hiros::skeletons::types::Skelet
   return n_kps;
 }
 
+void hiros::track::utils::initializeVelocities(hiros::skeletons::types::Skeleton& t_skeleton)
+{
+  for (auto& kpg : t_skeleton.skeleton_parts) {
+    for (auto& kp : kpg.keypoints) {
+      kp.point.velocity = hiros::skeletons::types::Velocity();
+    }
+  }
+}
+
 hiros::skeletons::types::Keypoint hiros::track::utils::findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
                                                                     const int& t_keypoint_group_id,
                                                                     const int& t_keypoint_id)
