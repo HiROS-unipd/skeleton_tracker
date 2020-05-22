@@ -19,6 +19,7 @@
     <arg name="use_keypoint_positions"               value="true"                                           />
     <arg name="use_keypoint_velocities"              value="true"                                           />
     <arg name="velocity_weight"                      value="0.05"                                           />
+    <arg name="weight_distances_by_confidences"      value="false"                                          />
     <arg name="weight_distances_by_velocities"       value="false"                                          />
 
   </include>

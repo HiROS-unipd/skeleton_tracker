@@ -51,6 +51,7 @@ void hiros::track::Tracker::configure()
   m_nh.getParam("use_keypoint_positions", m_params.use_keypoint_positions);
   m_nh.getParam("use_keypoint_velocities", m_params.use_keypoint_velocities);
   m_nh.getParam("velocity_weight", m_params.velocity_weight);
+  m_nh.getParam("weight_distances_by_confidences", m_params.weight_distances_by_confidences);
   m_nh.getParam("weight_distances_by_velocities", m_params.weight_distances_by_velocities);
 
   if (!m_params.use_keypoint_positions && !m_params.use_keypoint_velocities) {
@@ -249,11 +250,12 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
     for (auto& det_kp : det_kpg.keypoints) {
       hiros::skeletons::types::Keypoint track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
 
-      weight = 1;
+      weight = (m_params.weight_distances_by_confidences) ? det_kp.confidence : 1;
+
       if (m_params.weight_distances_by_velocities && !std::isnan(track_kp.point.velocity.x)
           && !std::isnan(track_kp.point.velocity.y)) {
         // Elevate velocity magnitude to the power of 0.25 to have smoother weights
-        weight = std::pow(1 + utils::magnitude(track_kp.point.velocity), -0.25);
+        weight *= std::pow(1 + utils::magnitude(track_kp.point.velocity), -0.25);
       }
 
       if (m_params.use_keypoint_positions && !std::isnan(track_kp.point.position.x)
