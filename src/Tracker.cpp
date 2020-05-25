@@ -16,6 +16,7 @@
 hiros::track::Tracker::Tracker()
   : m_nh("~")
   , m_node_namespace(m_nh.getNamespace())
+  , m_prev_skeleton_group_src_time(0)
   , m_last_track_id(-1)
   , m_configured(false)
 {
@@ -128,13 +129,20 @@ void hiros::track::Tracker::trackingCallback(const skeleton_msgs::SkeletonGroupC
 
 void hiros::track::Tracker::track()
 {
-  fillDetections();
-  createCostMatrix();
-  solveMunkres();
-  removeDistantMatches();
-  updateDetectedTracks();
-  addNewTracks();
-  removeUnassociatedTracks();
+  if (m_skeleton_group_src_time > m_prev_skeleton_group_src_time) {
+    fillDetections();
+    createCostMatrix();
+    solveMunkres();
+    removeDistantMatches();
+    updateDetectedTracks();
+    addNewTracks();
+    removeUnassociatedTracks();
+
+    m_prev_skeleton_group_src_time = m_skeleton_group_src_time;
+  }
+  else {
+    ROS_WARN_STREAM("Hi-ROS Skeleton Tracker...Last detection is older than the previous one. Skipping");
+  }
 }
 
 void hiros::track::Tracker::fillDetections()

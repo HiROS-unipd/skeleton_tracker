@@ -96,6 +96,7 @@ namespace hiros {
       ros::Subscriber m_in_skeleton_group_sub;
       ros::Publisher m_out_msg_pub;
 
+      ros::Time m_prev_skeleton_group_src_time;
       ros::Time m_skeleton_group_src_time;
       skeletons::types::SkeletonGroup m_skeleton_group;
 
