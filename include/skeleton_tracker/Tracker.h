@@ -29,6 +29,7 @@ namespace hiros {
       std::vector<std::string> in_skeleton_group_topics;
       std::string out_msg_topic_name;
 
+      double fixed_delay;
       int min_keypoints;
       double max_distance;
       ros::Duration max_delta_t;
@@ -56,6 +57,11 @@ namespace hiros {
 
       void detectorCallback(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
       void track();
+
+      ros::Time getPreviousSourceTime() const;
+      void addNewSkeletonGroupToMap(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
+      void eraseOldSkeletonGroupFromMap();
+      void publishTracks() const;
 
       void fillDetections();
       void createCostMatrix();
@@ -96,9 +102,8 @@ namespace hiros {
       std::vector<ros::Subscriber> m_in_skeleton_group_subs;
       ros::Publisher m_out_msg_pub;
 
-      ros::Time m_prev_skeleton_group_src_time;
-      ros::Time m_skeleton_group_src_time;
-      skeletons::types::SkeletonGroup m_skeleton_group;
+      // map<src_time, pair<frame_id, skeleton_group>>
+      std::map<ros::Time, std::pair<std::string, skeletons::types::SkeletonGroup>> m_skeleton_groups_map;
 
       Munkres m_munkres;
       cv::Mat_<double> m_cost_matrix;

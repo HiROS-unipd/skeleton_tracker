@@ -16,7 +16,6 @@
 hiros::track::Tracker::Tracker()
   : m_nh("~")
   , m_node_namespace(m_nh.getNamespace())
-  , m_prev_skeleton_group_src_time(0)
   , m_last_track_id(-1)
   , m_configured(false)
 {
@@ -45,6 +44,7 @@ void hiros::track::Tracker::configure()
   }
 
   double max_delta_t = 0;
+  m_nh.getParam("fixed_delay", m_params.fixed_delay);
   m_nh.getParam("min_keypoints", m_params.min_keypoints);
   m_nh.getParam("max_distance", m_params.max_distance);
   m_nh.getParam("max_delta_t", max_delta_t);
@@ -134,37 +134,65 @@ void hiros::track::Tracker::setupRosTopics()
 
 void hiros::track::Tracker::detectorCallback(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
 {
-  m_skeleton_group_src_time = t_skeleton_group_msg->src_time;
-  m_skeleton_group = hiros::skeletons::utils::toStruct(*t_skeleton_group_msg);
+  if (t_skeleton_group_msg->src_time <= getPreviousSourceTime()) {
+    return;
+  }
 
-  track();
+  addNewSkeletonGroupToMap(t_skeleton_group_msg);
 
-  m_out_msg_pub.publish(skeletons::utils::toMsg(
-    ros::Time::now(), t_skeleton_group_msg->header.frame_id, m_skeleton_group_src_time, m_tracks));
+  if (m_params.in_skeleton_group_topics.size() == 1
+      || (t_skeleton_group_msg->src_time - m_skeleton_groups_map.begin()->first).toSec() >= m_params.fixed_delay) {
+    track();
+    publishTracks();
+    eraseOldSkeletonGroupFromMap();
+  }
 }
 
 void hiros::track::Tracker::track()
 {
-  if (m_skeleton_group_src_time > m_prev_skeleton_group_src_time) {
-    fillDetections();
-    createCostMatrix();
-    solveMunkres();
-    removeDistantMatches();
-    updateDetectedTracks();
-    addNewTracks();
-    removeUnassociatedTracks();
+  fillDetections();
+  createCostMatrix();
+  solveMunkres();
+  removeDistantMatches();
+  updateDetectedTracks();
+  addNewTracks();
+  removeUnassociatedTracks();
+}
 
-    m_prev_skeleton_group_src_time = m_skeleton_group_src_time;
-  }
-  else {
-    ROS_WARN_STREAM("Hi-ROS Skeleton Tracker...Last detection is older than the previous one. Skipping");
-  }
+ros::Time hiros::track::Tracker::getPreviousSourceTime() const
+{
+  return !m_track_id_to_time_stamp_map.empty()
+           ? (std::max_element(m_track_id_to_time_stamp_map.begin(),
+                               m_track_id_to_time_stamp_map.end(),
+                               [](const std::pair<int, ros::Time>& t1, const std::pair<int, ros::Time>& t2) {
+                                 return t1.second < t2.second;
+                               }))
+               ->second
+           : ros::Time();
+}
+
+void hiros::track::Tracker::addNewSkeletonGroupToMap(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
+{
+  m_skeleton_groups_map.emplace(
+    t_skeleton_group_msg->src_time,
+    std::make_pair(t_skeleton_group_msg->header.frame_id, hiros::skeletons::utils::toStruct(*t_skeleton_group_msg)));
+}
+
+void hiros::track::Tracker::eraseOldSkeletonGroupFromMap()
+{
+  m_skeleton_groups_map.erase(m_skeleton_groups_map.begin());
+}
+
+void hiros::track::Tracker::publishTracks() const
+{
+  m_out_msg_pub.publish(skeletons::utils::toMsg(
+    ros::Time::now(), m_skeleton_groups_map.begin()->second.first, m_skeleton_groups_map.begin()->first, m_tracks));
 }
 
 void hiros::track::Tracker::fillDetections()
 {
   m_detections.skeletons.clear();
-  for (auto& skeleton : m_skeleton_group.skeletons) {
+  for (auto& skeleton : m_skeleton_groups_map.begin()->second.second.skeletons) {
     if (!utils::isEmpty(skeleton)) {
       m_detections.skeletons.push_back(skeleton);
     }
@@ -246,7 +274,7 @@ void hiros::track::Tracker::removeUnassociatedTracks()
   for (int track_idx = 0, index_to_erase = 0; track_idx < static_cast<int>(m_tracks.skeletons.size());
        ++track_idx, ++index_to_erase) {
     if (unassociatedTrack(static_cast<unsigned int>(track_idx))) {
-      delta_t = m_skeleton_group_src_time
+      delta_t = m_skeleton_groups_map.begin()->first
                 - m_track_id_to_time_stamp_map.at(m_tracks.skeletons.at(static_cast<unsigned int>(index_to_erase)).id);
 
       if (delta_t > m_params.max_delta_t) {
@@ -312,7 +340,7 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
 void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
                                              hiros::skeletons::types::Skeleton& t_detection)
 {
-  double dt = (m_skeleton_group_src_time - m_track_id_to_time_stamp_map.at(t_track.id)).toSec();
+  double dt = (m_skeleton_groups_map.begin()->first - m_track_id_to_time_stamp_map.at(t_track.id)).toSec();
 
   for (auto& det_kpg : t_detection.skeleton_parts) {
     for (auto& det_kp : det_kpg.keypoints) {
@@ -329,7 +357,7 @@ void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::Skel
 void hiros::track::Tracker::computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
                                               hiros::skeletons::types::Skeleton& t_detection)
 {
-  double dt = (m_skeleton_group_src_time - m_track_id_to_time_stamp_map.at(t_track.id)).toSec();
+  double dt = (m_skeleton_groups_map.begin()->first - m_track_id_to_time_stamp_map.at(t_track.id)).toSec();
 
   for (auto& det_kpg : t_detection.skeleton_parts) {
     for (auto& det_kp : det_kpg.keypoints) {
@@ -366,7 +394,7 @@ void hiros::track::Tracker::updateDetectedTrack(const unsigned int& t_track_idx,
   if (match(t_track_idx, t_det_idx)) {
     computeVelAndAcc(m_tracks.skeletons.at(t_track_idx), m_detections.skeletons.at(t_det_idx));
     int id = m_tracks.skeletons.at(t_track_idx).id;
-    m_track_id_to_time_stamp_map.at(id) = m_skeleton_group_src_time;
+    m_track_id_to_time_stamp_map.at(id) = m_skeleton_groups_map.begin()->first;
     m_tracks.skeletons.at(t_track_idx) = m_detections.skeletons.at(t_det_idx);
     m_tracks.skeletons.at(t_track_idx).id = id;
   }
@@ -379,7 +407,7 @@ void hiros::track::Tracker::addNewTrack(const hiros::skeletons::types::Skeleton&
     m_tracks.skeletons.back().id = ++m_last_track_id;
     utils::initializeVelAndAcc(m_tracks.skeletons.back());
 
-    m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_group_src_time);
+    m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_groups_map.begin()->first);
   }
 }
 

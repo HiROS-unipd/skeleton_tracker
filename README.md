@@ -22,6 +22,7 @@ roslaunch hiros_openpose_wrapper custom_configuration_example.launch
 ```
 
 ## Parameters
+* **fixed_delay**: Fixed delay to apply before tracking a detection (avoid possible source time inconsistencies when using multiple detectors)
 * **min_keypoints**: Minimum number of keypoints to be detected to begin tracking
 * **max_distance**: Maximum acceptable distance between track and detection
 * **max_delta_t**: Maximum acceptable time delta between track and detection
