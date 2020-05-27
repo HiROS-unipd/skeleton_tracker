@@ -26,7 +26,7 @@ namespace hiros {
     {
       std::string node_name;
 
-      std::string in_skeleton_group_topic;
+      std::vector<std::string> in_skeleton_group_topics;
       std::string out_msg_topic_name;
 
       int min_keypoints;
@@ -52,9 +52,9 @@ namespace hiros {
       void stop();
       void setupRosTopics();
 
-      std::string extractImageQualityFromTopicName(const std::string& t_topic_name) const;
+      std::string extractImageQualityFromTopicNames(const std::vector<std::string>& t_topic_names) const;
 
-      void trackingCallback(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
+      void detectorCallback(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
       void track();
 
       void fillDetections();
@@ -93,7 +93,7 @@ namespace hiros {
 
       TrackerParameters m_params;
 
-      ros::Subscriber m_in_skeleton_group_sub;
+      std::vector<ros::Subscriber> m_in_skeleton_group_subs;
       ros::Publisher m_out_msg_pub;
 
       ros::Time m_prev_skeleton_group_src_time;

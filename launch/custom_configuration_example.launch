@@ -10,7 +10,7 @@
     <arg name="hiros_skeleton_tracker_node_required" value="true"                                           />
     <arg name="node_name"                            value="$(arg node_name)"                               />
 
-    <arg name="in_skeleton_group_topic"              value="/hiros/opw/$(arg node_name)/qhd/skeleton_group" />
+    <arg name="in_skeleton_group_topics"             value="[/topic1, /topic2]"                             />
     <arg name="out_msg_topic_name"                   value="skeleton_group"                                 />
 
     <arg name="min_keypoints"                        value="7"                                              />

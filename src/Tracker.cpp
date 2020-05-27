@@ -36,10 +36,10 @@ void hiros::track::Tracker::configure()
   }
 
   m_nh.getParam("node_name", m_params.node_name);
-  m_nh.getParam("in_skeleton_group_topic", m_params.in_skeleton_group_topic);
+  m_nh.getParam("in_skeleton_group_topics", m_params.in_skeleton_group_topics);
   m_nh.getParam("out_msg_topic_name", m_params.out_msg_topic_name);
 
-  if (m_params.in_skeleton_group_topic.empty() || m_params.out_msg_topic_name.empty()) {
+  if (m_params.in_skeleton_group_topics.empty() || m_params.out_msg_topic_name.empty()) {
     ROS_FATAL_STREAM("Required topics configuration not provided. Unable to continue");
     ros::shutdown();
   }
@@ -81,8 +81,9 @@ void hiros::track::Tracker::stop()
 {
   ROS_INFO_STREAM("Hi-ROS Skeleton Tracker...Stopping");
 
-  if (m_in_skeleton_group_sub) {
-    m_in_skeleton_group_sub.shutdown();
+  if (!m_in_skeleton_group_subs.empty()) {
+    for (auto& sub : m_in_skeleton_group_subs)
+      sub.shutdown();
   }
 
   if (m_out_msg_pub) {
@@ -92,31 +93,46 @@ void hiros::track::Tracker::stop()
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...STOPPED" << BASH_MSG_RESET);
 }
 
-std::string hiros::track::Tracker::extractImageQualityFromTopicName(const std::string& t_topic_name) const
+std::string
+hiros::track::Tracker::extractImageQualityFromTopicNames(const std::vector<std::string>& t_topic_names) const
 {
-  auto tmp = t_topic_name.find_last_of("/");
-  std::string tmp2 = t_topic_name.substr(0, tmp - 1);
-  auto tmp3 = tmp2.find_last_of("/");
-  return t_topic_name.substr(tmp3 + 1, tmp - tmp3 - 1);
+  std::vector<std::string> image_qualities;
+  image_qualities.reserve(t_topic_names.size());
+
+  for (auto& topic_name : t_topic_names) {
+    auto tmp1 = topic_name.find_last_of("/");
+    std::string tmp2 = topic_name.substr(0, tmp1);
+    auto tmp3 = tmp2.find_last_of("/");
+    image_qualities.push_back(topic_name.substr(tmp3 + 1, tmp1 - tmp3 - 1));
+  }
+
+  return (std::adjacent_find(image_qualities.begin(), image_qualities.end(), std::not_equal_to<std::string>())
+          == image_qualities.end())
+           ? image_qualities.front()
+           : std::string();
 }
 
 void hiros::track::Tracker::setupRosTopics()
 {
-  m_in_skeleton_group_sub = m_nh.subscribe(m_params.in_skeleton_group_topic, 1, &Tracker::trackingCallback, this);
-  while (m_in_skeleton_group_sub.getNumPublishers() == 0 && !ros::isShuttingDown()) {
-    ROS_WARN_STREAM_THROTTLE(2, m_node_namespace << " No input messages on skeleton group topic");
-    ros::Duration(2).sleep();
+  for (auto& topic : m_params.in_skeleton_group_topics) {
+    m_in_skeleton_group_subs.push_back(m_nh.subscribe(topic, 1, &Tracker::detectorCallback, this));
+  }
+
+  for (auto& sub : m_in_skeleton_group_subs) {
+    while (sub.getNumPublishers() == 0 && !ros::isShuttingDown()) {
+      ROS_WARN_STREAM_THROTTLE(2, m_node_namespace << " No input messages on skeleton group topic(s)");
+    }
   }
 
   std::string out_msg_topic = m_params.out_msg_topic_name;
-  std::string image_quality = extractImageQualityFromTopicName(m_params.in_skeleton_group_topic);
+  std::string image_quality = extractImageQualityFromTopicNames(m_params.in_skeleton_group_topics);
   if (!image_quality.empty()) {
     out_msg_topic.insert(0, image_quality + "/");
   }
   m_out_msg_pub = m_nh.advertise<skeleton_msgs::SkeletonGroup>(out_msg_topic, 1);
 }
 
-void hiros::track::Tracker::trackingCallback(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
+void hiros::track::Tracker::detectorCallback(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
 {
   m_skeleton_group_src_time = t_skeleton_group_msg->src_time;
   m_skeleton_group = hiros::skeletons::utils::toStruct(*t_skeleton_group_msg);

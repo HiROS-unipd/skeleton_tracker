@@ -7,7 +7,7 @@
   <!--************************************-->
   <!-- Hi-Ros Skeleton Tracker Parameters -->
   <!--************************************-->
-  <arg name="in_skeleton_group_topic"         default=""      />
+  <arg name="in_skeleton_group_topics"        default="[]"    />
   <arg name="out_msg_topic_name"              default="track" />
       
   <arg name="min_keypoints"                   default="0"     />
@@ -25,7 +25,7 @@
   <node pkg="hiros_skeleton_tracker" type="hiros_skeleton_tracker" ns="hiros/st" name="$(arg node_name)" output="screen" required="$(arg hiros_skeleton_tracker_node_required)">
     <param name="node_name"                       type="str"    value="$(arg node_name)"                       />
 
-    <param name="in_skeleton_group_topic"         type="str"    value="$(arg in_skeleton_group_topic)"         />
+    <rosparam param="in_skeleton_group_topics"    subst_value="True">$(arg in_skeleton_group_topics)  </rosparam>
     <param name="out_msg_topic_name"              type="str"    value="$(arg out_msg_topic_name)"              />
 
     <param name="min_keypoints"                   type="int"    value="$(arg min_keypoints)"                   />
