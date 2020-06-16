@@ -23,6 +23,9 @@
     <arg name="weight_distances_by_confidences"      value="false"                                          />
     <arg name="weight_distances_by_velocities"       value="false"                                          />
 
+    <arg name="filter_keypoint_trajectories"         value="true"                                           />
+    <arg name="filter_cutoff_frequency"              value="6.0"                                            />
+
   </include>
 
 </launch>

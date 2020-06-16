@@ -14,6 +14,7 @@
 #include "skeletons/types.h"
 
 // Custom Internal dependencies
+#include "skeleton_tracker/Filter.h"
 #include "skeleton_tracker/Munkres.h"
 
 #define BASH_MSG_RESET "\033[0m"
@@ -38,6 +39,9 @@ namespace hiros {
       double velocity_weight;
       bool weight_distances_by_confidences;
       bool weight_distances_by_velocities;
+
+      bool filter_keypoint_trajectories;
+      double filter_cutoff_frequency;
     };
 
     class Tracker
@@ -111,6 +115,7 @@ namespace hiros {
       int m_last_track_id;
 
       std::map<int, ros::Time> m_track_id_to_time_stamp_map;
+      std::map<int, hiros::track::Filter> m_track_id_to_filter_map;
       skeletons::types::SkeletonGroup m_tracks;
       skeletons::types::SkeletonGroup m_detections;
 

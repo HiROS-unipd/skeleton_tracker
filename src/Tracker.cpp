@@ -55,6 +55,14 @@ void hiros::track::Tracker::configure()
   m_nh.getParam("weight_distances_by_confidences", m_params.weight_distances_by_confidences);
   m_nh.getParam("weight_distances_by_velocities", m_params.weight_distances_by_velocities);
 
+  m_nh.getParam("filter_keypoint_trajectories", m_params.filter_keypoint_trajectories);
+  m_nh.getParam("filter_cutoff_frequency", m_params.filter_cutoff_frequency);
+
+  if (m_params.filter_keypoint_trajectories && (m_params.filter_cutoff_frequency <= 0.0)) {
+    ROS_FATAL_STREAM("Cutoff frequency must be greater than 0 Hz. Unable to continue");
+    ros::shutdown();
+  }
+
   if (!m_params.use_keypoint_positions && !m_params.use_keypoint_velocities) {
     ROS_FATAL_STREAM("Position based distance and/or velocity based distance must be enabled. Unable to continue");
     ros::shutdown();
@@ -278,6 +286,9 @@ void hiros::track::Tracker::removeUnassociatedTracks()
                 - m_track_id_to_time_stamp_map.at(m_tracks.skeletons.at(static_cast<unsigned int>(index_to_erase)).id);
 
       if (delta_t > m_params.max_delta_t) {
+        if (m_params.filter_keypoint_trajectories) {
+          m_track_id_to_filter_map.erase(m_tracks.skeletons.at(static_cast<unsigned int>(index_to_erase)).id);
+        }
         m_track_id_to_time_stamp_map.erase(m_tracks.skeletons.at(static_cast<unsigned int>(index_to_erase)).id);
         m_tracks.skeletons.erase(m_tracks.skeletons.begin() + index_to_erase--);
       }
@@ -392,11 +403,19 @@ hiros::track::Tracker::computeAcceleration(const hiros::skeletons::types::Point&
 void hiros::track::Tracker::updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx)
 {
   if (match(t_track_idx, t_det_idx)) {
-    computeVelAndAcc(m_tracks.skeletons.at(t_track_idx), m_detections.skeletons.at(t_det_idx));
+    if (!m_params.filter_keypoint_trajectories) {
+      computeVelAndAcc(m_tracks.skeletons.at(t_track_idx), m_detections.skeletons.at(t_det_idx));
+    }
+
     int id = m_tracks.skeletons.at(t_track_idx).id;
     m_track_id_to_time_stamp_map.at(id) = m_skeleton_groups_map.begin()->first;
     m_tracks.skeletons.at(t_track_idx) = m_detections.skeletons.at(t_det_idx);
     m_tracks.skeletons.at(t_track_idx).id = id;
+
+    if (m_params.filter_keypoint_trajectories) {
+      m_track_id_to_filter_map.at(id).filter(m_tracks.skeletons.at(t_track_idx),
+                                             m_track_id_to_time_stamp_map.at(id).toSec());
+    }
   }
 }
 
@@ -408,6 +427,13 @@ void hiros::track::Tracker::addNewTrack(const hiros::skeletons::types::Skeleton&
     utils::initializeVelAndAcc(m_tracks.skeletons.back());
 
     m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_groups_map.begin()->first);
+
+    if (m_params.filter_keypoint_trajectories) {
+      m_track_id_to_filter_map.emplace(m_tracks.skeletons.back().id,
+                                       hiros::track::Filter(m_tracks.skeletons.back(),
+                                                            m_track_id_to_time_stamp_map.at(m_last_track_id).toSec(),
+                                                            m_params.filter_cutoff_frequency));
+    }
   }
 }
 

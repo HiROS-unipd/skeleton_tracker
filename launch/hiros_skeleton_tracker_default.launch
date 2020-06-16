@@ -20,6 +20,9 @@
   <arg name="weight_distances_by_confidences" default="false" />
   <arg name="weight_distances_by_velocities"  default="false" />
 
+  <arg name="filter_keypoint_trajectories"    default="false" />
+  <arg name="filter_cutoff_frequency"         default="0.0"   />
+
   <!--*******************************-->
   <!-- Hi-Ros OpenPose Tracking Node -->
   <!--*******************************-->
@@ -38,6 +41,9 @@
     <param name="velocity_weight"                 type="double" value="$(arg velocity_weight)"                 />
     <param name="weight_distances_by_confidences" type="bool"   value="$(arg weight_distances_by_confidences)" />
     <param name="weight_distances_by_velocities"  type="bool"   value="$(arg weight_distances_by_velocities)"  />
+
+    <param name="filter_keypoint_trajectories"    type="bool"   value="$(arg filter_keypoint_trajectories)"    />
+    <param name="filter_cutoff_frequency"         type="double" value="$(arg filter_cutoff_frequency)"         />
   </node>
 
 </launch>
