@@ -15,6 +15,7 @@
 
     <arg name="fixed_delay"                          value="0.1"                                            />
     <arg name="min_keypoints"                        value="7"                                              />
+    <arg name="min_distance"                         value="0.5"                                            />
     <arg name="max_distance"                         value="100"                                            />
     <arg name="max_delta_t"                          value="0.05"                                           />
     <arg name="use_keypoint_positions"               value="true"                                           />

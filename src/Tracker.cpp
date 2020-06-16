@@ -46,6 +46,7 @@ void hiros::track::Tracker::configure()
   double max_delta_t = 0;
   m_nh.getParam("fixed_delay", m_params.fixed_delay);
   m_nh.getParam("min_keypoints", m_params.min_keypoints);
+  m_nh.getParam("min_distance", m_params.min_distance);
   m_nh.getParam("max_distance", m_params.max_distance);
   m_nh.getParam("max_delta_t", max_delta_t);
   m_params.max_delta_t = ros::Duration(max_delta_t);
@@ -268,8 +269,18 @@ void hiros::track::Tracker::addNewTracks()
   }
   else {
     for (unsigned int c = 0; c < static_cast<unsigned int>(m_munkres_matrix.cols); ++c) {
-      if (unassociatedDetection(c)) {
-        addNewTrack(m_detections.skeletons.at(c));
+      if (unassociatedDetection(c) && m_params.min_distance >= 0) {
+
+        double min;
+        unsigned int row, col;
+        utils::minWithIndex(m_cost_matrix.col(static_cast<int>(c)), min, row, col);
+
+        if (min < m_params.min_distance) {
+          utils::merge(m_tracks.skeletons.at(row), m_detections.skeletons.at(c));
+        }
+        else {
+          addNewTrack(m_detections.skeletons.at(c));
+        }
       }
     }
   }

@@ -32,6 +32,7 @@ namespace hiros {
 
       double fixed_delay;
       int min_keypoints;
+      double min_distance;
       double max_distance;
       ros::Duration max_delta_t;
       bool use_keypoint_positions;

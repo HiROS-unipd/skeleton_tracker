@@ -12,6 +12,7 @@
 
   <arg name="fixed_delay"                     default="0"     />
   <arg name="min_keypoints"                   default="0"     />
+  <arg name="min_distance"                    default="-1"    />
   <arg name="max_distance"                    default="-1"    />
   <arg name="max_delta_t"                     default="0"     />
   <arg name="use_keypoint_positions"          default="true"  />
@@ -34,6 +35,7 @@
 
     <param name="fixed_delay"                     type="double" value="$(arg fixed_delay)"                     />
     <param name="min_keypoints"                   type="int"    value="$(arg min_keypoints)"                   />
+    <param name="min_distance"                    type="double" value="$(arg min_distance)"                    />
     <param name="max_distance"                    type="double" value="$(arg max_distance)"                    />
     <param name="max_delta_t"                     type="double" value="$(arg max_delta_t)"                     />
     <param name="use_keypoint_positions"          type="bool"   value="$(arg use_keypoint_positions)"          />
