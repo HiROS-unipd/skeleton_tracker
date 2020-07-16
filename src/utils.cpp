@@ -152,24 +152,32 @@ hiros::track::utils::findKeypoint(const hiros::skeletons::types::Skeleton& t_ske
   return nullptr;
 }
 
-void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1, const hiros::skeletons::types::Skeleton& t_s2)
+void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1,
+                                const skeletons::types::Skeleton& t_s2,
+                                const double& t_w1,
+                                const double& t_w2,
+                                const bool& t_weight_by_confidence)
 {
   for (auto& s2_kpg : t_s2.skeleton_parts) {
     for (auto& s2_kp : s2_kpg.keypoints) {
-      merge(t_s1, s2_kpg, s2_kp);
+      merge(t_s1, s2_kpg, s2_kp, t_w1, t_w2, t_weight_by_confidence);
     }
   }
 }
 
-void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_sk,
-                                const hiros::skeletons::types::KeypointGroup& t_kpg,
-                                const hiros::skeletons::types::Keypoint& t_kp)
+void hiros::track::utils::merge(skeletons::types::Skeleton& t_sk,
+                                const skeletons::types::KeypointGroup& t_kpg,
+                                const skeletons::types::Keypoint& t_kp,
+                                const double& t_w1,
+                                const double& t_w2,
+                                const bool& t_weight_by_confidence)
 {
   for (auto kpg_it = t_sk.skeleton_parts.begin(); kpg_it != t_sk.skeleton_parts.end(); ++kpg_it) {
     if (kpg_it->id == t_kpg.id) {
       for (auto kp_it = kpg_it->keypoints.begin(); kp_it != kpg_it->keypoints.end(); ++kp_it) {
         if (kp_it->id == t_kp.id) {
-          *kp_it = t_kp;
+          *kp_it = t_weight_by_confidence ? wavg(*kp_it, t_kp, t_w1 * kp_it->confidence, t_w2 * t_kp.confidence)
+                                          : wavg(*kp_it, t_kp, t_w1, t_w2);
           return;
         }
 
@@ -190,6 +198,34 @@ void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_sk,
   }
 
   t_sk.skeleton_parts.push_back(t_kpg);
+}
+
+hiros::skeletons::types::Vector hiros::track::utils::wavg(const hiros::skeletons::types::Vector& t_v1,
+                                                          const hiros::skeletons::types::Vector& t_v2,
+                                                          const double& t_w1,
+                                                          const double& t_w2)
+{
+  return (t_w1 * t_v1 + t_w2 * t_v2) / (t_w1 + t_w2);
+}
+
+hiros::skeletons::types::Keypoint hiros::track::utils::wavg(const skeletons::types::Keypoint& t_kp1,
+                                                            const skeletons::types::Keypoint& t_kp2,
+                                                            const double& t_w1,
+                                                            const double& t_w2)
+{
+  if (t_kp1.id != t_kp2.id) {
+    return skeletons::types::Keypoint();
+  }
+
+  skeletons::types::Keypoint avg_kp;
+
+  avg_kp.id = t_kp1.id;
+  avg_kp.confidence = (t_w1 * t_kp1.confidence + t_w2 * t_kp2.confidence) / (t_w1 + t_w2);
+  avg_kp.point.position = wavg(t_kp1.point.position, t_kp2.point.position, t_w1, t_w2);
+  avg_kp.point.velocity = wavg(t_kp1.point.velocity, t_kp2.point.velocity, t_w1, t_w2);
+  avg_kp.point.acceleration = wavg(t_kp1.point.acceleration, t_kp2.point.acceleration, t_w1, t_w2);
+
+  return avg_kp;
 }
 
 double hiros::track::utils::magnitude(const hiros::skeletons::types::Vector& t_v)

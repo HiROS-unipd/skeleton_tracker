@@ -26,10 +26,25 @@ namespace hiros {
       findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
                    const int& t_keypoint_group_id,
                    const int& t_keypoint_id);
-      void merge(hiros::skeletons::types::Skeleton& t_s1, const hiros::skeletons::types::Skeleton& t_s2);
+      void merge(hiros::skeletons::types::Skeleton& t_s1,
+                 const hiros::skeletons::types::Skeleton& t_s2,
+                 const double& t_w1 = 1,
+                 const double& t_w2 = 1,
+                 const bool& t_weight_by_confidence = false);
       void merge(hiros::skeletons::types::Skeleton& t_sk,
                  const hiros::skeletons::types::KeypointGroup& t_kpg,
-                 const hiros::skeletons::types::Keypoint& t_kp);
+                 const hiros::skeletons::types::Keypoint& t_kp,
+                 const double& t_w1 = 1,
+                 const double& t_w2 = 1,
+                 const bool& t_weight_by_confidence = false);
+      hiros::skeletons::types::Vector wavg(const hiros::skeletons::types::Vector& t_v1,
+                                           const hiros::skeletons::types::Vector& t_v2,
+                                           const double& t_w1,
+                                           const double& t_w2);
+      hiros::skeletons::types::Keypoint wavg(const hiros::skeletons::types::Keypoint& t_kp1,
+                                             const hiros::skeletons::types::Keypoint& t_kp2,
+                                             const double& t_w1 = 1,
+                                             const double& t_w2 = 1);
       double magnitude(const hiros::skeletons::types::Vector& t_v);
       double distance(const hiros::skeletons::types::Vector& t_v1, const hiros::skeletons::types::Vector& t_v2);
 
