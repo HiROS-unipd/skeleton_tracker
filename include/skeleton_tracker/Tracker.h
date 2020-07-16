@@ -57,6 +57,7 @@ namespace hiros {
     private:
       void stop();
       void setupRosTopics();
+      void checkFrameIdConsistency(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
 
       std::string extractImageQualityFromTopicNames(const std::vector<std::string>& t_topic_names) const;
 
@@ -99,11 +100,16 @@ namespace hiros {
 
       TrackerParameters m_params;
 
+      std::string m_frame_id;
+      unsigned long m_n_detectors;
       std::vector<ros::Subscriber> m_in_skeleton_group_subs;
       ros::Publisher m_out_msg_pub;
 
-      // map<src_time, pair<frame_id, skeleton_group>>
-      std::map<ros::Time, std::pair<std::string, skeletons::types::SkeletonGroup>> m_skeleton_groups_map;
+      // vector<pair<src_frame, frame_id>>
+      std::vector<std::pair<std::string, std::string>> m_received_frames;
+
+      // map<src_time,  skeleton_group>
+      std::map<ros::Time, skeletons::types::SkeletonGroup> m_skeleton_groups_map;
 
       Munkres m_munkres;
       cv::Mat_<double> m_cost_matrix;
