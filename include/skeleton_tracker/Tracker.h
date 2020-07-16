@@ -62,11 +62,12 @@ namespace hiros {
       std::string extractImageQualityFromTopicNames(const std::vector<std::string>& t_topic_names) const;
 
       void detectorCallback(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
-      void track();
+      void trackOldestFrame();
 
       ros::Time getPreviousSourceTime() const;
       void addNewSkeletonGroupToBuffer(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
       void eraseOldSkeletonGroupFromBuffer();
+      void mergeTracks(bool& ready_to_be_published);
       void publishTracks(const hiros::skeletons::types::SkeletonGroup t_tracks) const;
 
       void fillDetections();
@@ -97,6 +98,11 @@ namespace hiros {
       bool unassociatedDetection(const unsigned int& t_det_idx) const;
       bool unassociatedTrack(const unsigned int& t_track_idx) const;
 
+      void computeAvgTracks();
+      double computeAvgSrcTime() const;
+      hiros::skeletons::types::Skeleton
+      computeAvgTrack(const std::vector<hiros::skeletons::types::Skeleton>& t_tracks) const;
+
       ros::NodeHandle m_nh;
       std::string m_node_namespace;
 
@@ -120,8 +126,15 @@ namespace hiros {
 
       std::map<int, ros::Time> m_track_id_to_time_stamp_map;
       std::map<int, hiros::track::Filter> m_track_id_to_filter_map;
+
+      // vector<pair<src_time, src_frame>>
+      std::vector<std::pair<ros::Time, std::string>> m_frames_to_merge;
+      // map<track_id, vector<skeleton_tracks>>
+      std::map<int, std::vector<skeletons::types::Skeleton>> m_tracks_to_merge;
+
       skeletons::types::SkeletonGroup m_detections;
       skeletons::types::SkeletonGroup m_tracks;
+      skeletons::types::SkeletonGroup m_avg_tracks;
 
       bool m_configured;
     };
