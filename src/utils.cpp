@@ -152,6 +152,22 @@ hiros::track::utils::findKeypoint(const hiros::skeletons::types::Skeleton& t_ske
   return nullptr;
 }
 
+std::unique_ptr<hiros::skeletons::types::Skeleton>
+hiros::track::utils::findTrack(const int& t_id, const hiros::skeletons::types::SkeletonGroup& t_skeleton_group)
+{
+  for (auto& sk : t_skeleton_group.skeletons) {
+    if (sk.id == t_id) {
+      return std::make_unique<hiros::skeletons::types::Skeleton>(sk);
+    }
+
+    if (sk.id > t_id) {
+      return nullptr;
+    }
+  }
+
+  return nullptr;
+}
+
 void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1,
                                 const skeletons::types::Skeleton& t_s2,
                                 const double& t_w1,

@@ -26,6 +26,8 @@ namespace hiros {
       findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
                    const int& t_keypoint_group_id,
                    const int& t_keypoint_id);
+      std::unique_ptr<hiros::skeletons::types::Skeleton>
+      findTrack(const int& t_id, const hiros::skeletons::types::SkeletonGroup& t_skeleton_group);
       void merge(hiros::skeletons::types::Skeleton& t_s1,
                  const hiros::skeletons::types::Skeleton& t_s2,
                  const double& t_w1 = 1,
