@@ -124,31 +124,32 @@ bool hiros::track::utils::hasKeypoint(const hiros::skeletons::types::Skeleton& t
   return false;
 }
 
-hiros::skeletons::types::Keypoint hiros::track::utils::findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
-                                                                    const int& t_keypoint_group_id,
-                                                                    const int& t_keypoint_id)
+std::unique_ptr<hiros::skeletons::types::Keypoint>
+hiros::track::utils::findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
+                                  const int& t_keypoint_group_id,
+                                  const int& t_keypoint_id)
 {
   for (auto& kpg : t_skeleton.skeleton_parts) {
     if (kpg.id == t_keypoint_group_id) {
       for (auto& kp : kpg.keypoints) {
         if (kp.id == t_keypoint_id) {
-          return kp;
+          return std::make_unique<hiros::skeletons::types::Keypoint>(kp);
         }
 
         if (kp.id > t_keypoint_id) {
-          return hiros::skeletons::types::Keypoint();
+          return nullptr;
         }
       }
 
-      return hiros::skeletons::types::Keypoint();
+      return nullptr;
     }
 
     if (kpg.id > t_keypoint_group_id) {
-      return hiros::skeletons::types::Keypoint();
+      return nullptr;
     }
   }
 
-  return hiros::skeletons::types::Keypoint();
+  return nullptr;
 }
 
 void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1, const hiros::skeletons::types::Skeleton& t_s2)

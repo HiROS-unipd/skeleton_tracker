@@ -22,9 +22,10 @@ namespace hiros {
       bool hasKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
                        const int& t_keypoint_group_id,
                        const int& t_keypoint_id);
-      hiros::skeletons::types::Keypoint findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
-                                                     const int& t_keypoint_group_id,
-                                                     const int& t_keypoint_id);
+      std::unique_ptr<hiros::skeletons::types::Keypoint>
+      findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
+                   const int& t_keypoint_group_id,
+                   const int& t_keypoint_id);
       void merge(hiros::skeletons::types::Skeleton& t_s1, const hiros::skeletons::types::Skeleton& t_s2);
       void merge(hiros::skeletons::types::Skeleton& t_sk,
                  const hiros::skeletons::types::KeypointGroup& t_kpg,
