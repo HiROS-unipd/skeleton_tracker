@@ -36,9 +36,27 @@ hiros::track::Filter::~Filter() {}
 
 void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time)
 {
+  for (auto skg_id = m_filters.begin()->first; skg_id < m_filters.end()->first; ++skg_id) {
+    if (m_filters.find(skg_id) != m_filters.end()) {
+      for (auto kp_id = m_filters.at(skg_id).begin()->first; kp_id < m_filters.at(skg_id).end()->first; ++kp_id) {
+        // erase empty keypoints
+        if (m_filters.at(skg_id).find(kp_id) != m_filters.at(skg_id).end()
+            && !utils::hasKeypoint(t_skeleton, skg_id, kp_id)) {
+          m_filters.at(skg_id).erase(kp_id);
+        }
+      }
+
+      // erase empty skeleton groups
+      if (m_filters.at(skg_id).empty()) {
+        m_filters.erase(skg_id);
+      }
+    }
+  }
+
   for (auto& skg : t_skeleton.skeleton_parts) {
     // new skeleton group
     if (m_filters.find(skg.id) == m_filters.end()) {
+      m_filters[skg.id] = {};
       for (auto& kp : skg.keypoints) {
         m_filters[skg.id][kp.id] = StateSpaceFilter3();
         m_filters[skg.id][kp.id].filter(kp.point, t_time, m_cutoff);
