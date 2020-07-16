@@ -19,7 +19,6 @@ namespace hiros {
 
       bool isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton);
       int numberOfKeypoints(const hiros::skeletons::types::Skeleton& t_skeleton);
-      void initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton);
       bool hasKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
                        const int& t_keypoint_group_id,
                        const int& t_keypoint_id);

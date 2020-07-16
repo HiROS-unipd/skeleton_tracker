@@ -78,6 +78,7 @@ namespace hiros {
 
       double computeDistance(const hiros::skeletons::types::Skeleton& t_track,
                              hiros::skeletons::types::Skeleton& t_detection);
+      void initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton);
       void computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
                             hiros::skeletons::types::Skeleton& t_detection);
       void computeVelocities(const hiros::skeletons::types::Skeleton& t_track,

@@ -359,6 +359,16 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
                                        : std::numeric_limits<double>::quiet_NaN();
 }
 
+void hiros::track::Tracker::initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton)
+{
+  for (auto& kpg : t_skeleton.skeleton_parts) {
+    for (auto& kp : kpg.keypoints) {
+      kp.point.velocity = hiros::skeletons::types::Velocity();
+      kp.point.acceleration = hiros::skeletons::types::Acceleration();
+    }
+  }
+}
+
 void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
                                              hiros::skeletons::types::Skeleton& t_detection)
 {
@@ -435,7 +445,7 @@ void hiros::track::Tracker::addNewTrack(const hiros::skeletons::types::Skeleton&
   if (utils::numberOfKeypoints(t_detection) >= m_params.min_keypoints) {
     m_tracks.skeletons.push_back(t_detection);
     m_tracks.skeletons.back().id = ++m_last_track_id;
-    utils::initializeVelAndAcc(m_tracks.skeletons.back());
+    initializeVelAndAcc(m_tracks.skeletons.back());
 
     m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_groups_map.begin()->first);
 
