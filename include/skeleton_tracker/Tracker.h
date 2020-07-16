@@ -93,12 +93,6 @@ namespace hiros {
       bool unassociatedDetection(const unsigned int& t_det_idx) const;
       bool unassociatedTrack(const unsigned int& t_track_idx) const;
 
-      bool match(const unsigned int& t_track_idx, const unsigned int& t_det_idx) const;
-      bool colHasMatch(const unsigned int& t_col) const;
-      int findMatchInCol(const unsigned int& t_col) const;
-      bool rowHasMatch(const unsigned int& t_row) const;
-      int findMatchInRow(const unsigned int& t_row) const;
-
       ros::NodeHandle m_nh;
       std::string m_node_namespace;
 

@@ -413,7 +413,7 @@ hiros::track::Tracker::computeAcceleration(const hiros::skeletons::types::Point&
 
 void hiros::track::Tracker::updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx)
 {
-  if (match(t_track_idx, t_det_idx)) {
+  if (m_munkres.match(t_track_idx, t_det_idx)) {
     if (!m_params.filter_keypoint_trajectories) {
       computeVelAndAcc(m_tracks.skeletons.at(t_track_idx), m_detections.skeletons.at(t_det_idx));
     }
@@ -450,59 +450,10 @@ void hiros::track::Tracker::addNewTrack(const hiros::skeletons::types::Skeleton&
 
 bool hiros::track::Tracker::unassociatedDetection(const unsigned int& t_det_idx) const
 {
-  return !colHasMatch(t_det_idx);
+  return !m_munkres.colHasMatch(t_det_idx);
 }
 
 bool hiros::track::Tracker::unassociatedTrack(const unsigned int& t_track_idx) const
 {
-  return !rowHasMatch(t_track_idx);
-}
-
-bool hiros::track::Tracker::match(const unsigned int& t_track_idx, const unsigned int& t_det_idx) const
-{
-  return (m_munkres_matrix(static_cast<int>(t_track_idx), static_cast<int>(t_det_idx)) == 1);
-}
-
-bool hiros::track::Tracker::colHasMatch(const unsigned int& t_col) const
-{
-  for (int r = 0; r < m_munkres_matrix.rows; ++r) {
-    if (m_munkres_matrix(r, static_cast<int>(t_col)) == 1) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-int hiros::track::Tracker::findMatchInCol(const unsigned int& t_col) const
-{
-  for (int r = 0; r < m_munkres_matrix.rows; ++r) {
-    if (m_munkres_matrix(r, static_cast<int>(t_col)) == 1) {
-      return r;
-    }
-  }
-
-  return -1;
-}
-
-bool hiros::track::Tracker::rowHasMatch(const unsigned int& t_row) const
-{
-  for (int c = 0; c < m_munkres_matrix.cols; ++c) {
-    if (m_munkres_matrix(static_cast<int>(t_row), c) == 1) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-int hiros::track::Tracker::findMatchInRow(const unsigned int& t_row) const
-{
-  for (int c = 0; c < m_munkres_matrix.cols; ++c) {
-    if (m_munkres_matrix(static_cast<int>(t_row), c) == 1) {
-      return c;
-    }
-  }
-
-  return -1;
+  return !m_munkres.rowHasMatch(t_track_idx);
 }
