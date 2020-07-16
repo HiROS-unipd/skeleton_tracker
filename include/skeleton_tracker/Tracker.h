@@ -65,9 +65,9 @@ namespace hiros {
       void track();
 
       ros::Time getPreviousSourceTime() const;
-      void addNewSkeletonGroupToMap(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
-      void eraseOldSkeletonGroupFromMap();
-      void publishTracks() const;
+      void addNewSkeletonGroupToBuffer(const skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
+      void eraseOldSkeletonGroupFromBuffer();
+      void publishTracks(const hiros::skeletons::types::SkeletonGroup t_tracks) const;
 
       void fillDetections();
       void createCostMatrix();
@@ -81,9 +81,11 @@ namespace hiros {
                              hiros::skeletons::types::Skeleton& t_detection);
       void initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton);
       void computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
-                            hiros::skeletons::types::Skeleton& t_detection);
+                            hiros::skeletons::types::Skeleton& t_detection,
+                            const double& t_dt);
       void computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
-                             hiros::skeletons::types::Skeleton& t_detection);
+                             hiros::skeletons::types::Skeleton& t_detection,
+                             const double& t_dt);
       hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::Point& t_prev,
                                                         const hiros::skeletons::types::Point& t_curr,
                                                         const double& t_dt);
@@ -109,7 +111,7 @@ namespace hiros {
       std::vector<std::pair<std::string, std::string>> m_received_frames;
 
       // map<src_time,  skeleton_group>
-      std::map<ros::Time, skeletons::types::SkeletonGroup> m_skeleton_groups_map;
+      std::map<ros::Time, skeletons::types::SkeletonGroup> m_skeleton_groups_buffer;
 
       Munkres m_munkres;
       cv::Mat_<double> m_cost_matrix;
@@ -118,8 +120,8 @@ namespace hiros {
 
       std::map<int, ros::Time> m_track_id_to_time_stamp_map;
       std::map<int, hiros::track::Filter> m_track_id_to_filter_map;
-      skeletons::types::SkeletonGroup m_tracks;
       skeletons::types::SkeletonGroup m_detections;
+      skeletons::types::SkeletonGroup m_tracks;
 
       bool m_configured;
     };
