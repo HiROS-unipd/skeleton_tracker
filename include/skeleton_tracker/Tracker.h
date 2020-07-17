@@ -79,20 +79,20 @@ namespace hiros {
       void removeUnassociatedTracks();
 
       double computeDistance(const hiros::skeletons::types::Skeleton& t_track,
-                             hiros::skeletons::types::Skeleton& t_detection);
-      void initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton);
+                             hiros::skeletons::types::Skeleton& t_detection) const;
+      void initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton) const;
       void computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
                             hiros::skeletons::types::Skeleton& t_detection,
-                            const double& t_dt);
+                            const double& t_dt) const;
       void computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
                              hiros::skeletons::types::Skeleton& t_detection,
-                             const double& t_dt);
+                             const double& t_dt) const;
       hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::Point& t_prev,
                                                         const hiros::skeletons::types::Point& t_curr,
-                                                        const double& t_dt);
+                                                        const double& t_dt) const;
       hiros::skeletons::types::Acceleration computeAcceleration(const hiros::skeletons::types::Point& t_prev,
                                                                 const hiros::skeletons::types::Point& t_curr,
-                                                                const double& t_dt);
+                                                                const double& t_dt) const;
       void updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx);
       void addNewTrack(const hiros::skeletons::types::Skeleton& t_detection);
       bool unassociatedDetection(const unsigned int& t_det_idx) const;

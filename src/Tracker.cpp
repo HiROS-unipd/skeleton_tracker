@@ -405,7 +405,7 @@ void hiros::track::Tracker::removeUnassociatedTracks()
 }
 
 double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                              hiros::skeletons::types::Skeleton& t_detection)
+                                              hiros::skeletons::types::Skeleton& t_detection) const
 {
   double pos_dist = 0;
   double vel_dist = 0;
@@ -457,7 +457,7 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
                                        : std::numeric_limits<double>::quiet_NaN();
 }
 
-void hiros::track::Tracker::initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton)
+void hiros::track::Tracker::initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton) const
 {
   for (auto& kpg : t_skeleton.skeleton_parts) {
     for (auto& kp : kpg.keypoints) {
@@ -469,7 +469,7 @@ void hiros::track::Tracker::initializeVelAndAcc(hiros::skeletons::types::Skeleto
 
 void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
                                              hiros::skeletons::types::Skeleton& t_detection,
-                                             const double& t_dt)
+                                             const double& t_dt) const
 {
   for (auto& det_kpg : t_detection.skeleton_parts) {
     for (auto& det_kp : det_kpg.keypoints) {
@@ -485,7 +485,7 @@ void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::Skel
 
 void hiros::track::Tracker::computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
                                               hiros::skeletons::types::Skeleton& t_detection,
-                                              const double& t_dt)
+                                              const double& t_dt) const
 {
   for (auto& det_kpg : t_detection.skeleton_parts) {
     for (auto& det_kp : det_kpg.keypoints) {
@@ -500,7 +500,7 @@ void hiros::track::Tracker::computeVelocities(const hiros::skeletons::types::Ske
 
 hiros::skeletons::types::Velocity hiros::track::Tracker::computeVelocity(const hiros::skeletons::types::Point& t_prev,
                                                                          const hiros::skeletons::types::Point& t_curr,
-                                                                         const double& t_dt)
+                                                                         const double& t_dt) const
 {
   return hiros::skeletons::types::Velocity((t_curr.position.x - t_prev.position.x) / t_dt,
                                            (t_curr.position.y - t_prev.position.y) / t_dt,
@@ -510,7 +510,7 @@ hiros::skeletons::types::Velocity hiros::track::Tracker::computeVelocity(const h
 hiros::skeletons::types::Acceleration
 hiros::track::Tracker::computeAcceleration(const hiros::skeletons::types::Point& t_prev,
                                            const hiros::skeletons::types::Point& t_curr,
-                                           const double& t_dt)
+                                           const double& t_dt) const
 {
   return hiros::skeletons::types::Acceleration((t_curr.velocity.x - t_prev.velocity.x) / t_dt,
                                                (t_curr.velocity.y - t_prev.velocity.y) / t_dt,
