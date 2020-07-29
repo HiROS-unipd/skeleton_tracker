@@ -19,15 +19,6 @@ namespace hiros {
 
       bool isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton);
       int numberOfKeypoints(const hiros::skeletons::types::Skeleton& t_skeleton);
-      bool hasKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
-                       const int& t_keypoint_group_id,
-                       const int& t_keypoint_id);
-      std::unique_ptr<hiros::skeletons::types::Keypoint>
-      findKeypoint(const hiros::skeletons::types::Skeleton& t_skeleton,
-                   const int& t_keypoint_group_id,
-                   const int& t_keypoint_id);
-      std::unique_ptr<hiros::skeletons::types::Skeleton>
-      findTrack(const int& t_id, const hiros::skeletons::types::SkeletonGroup& t_skeleton_group);
       void merge(hiros::skeletons::types::Skeleton& t_s1,
                  const hiros::skeletons::types::Skeleton& t_s2,
                  const double& t_w1 = 1,
@@ -47,8 +38,6 @@ namespace hiros {
                                              const hiros::skeletons::types::Keypoint& t_kp2,
                                              const double& t_w1 = 1,
                                              const double& t_w2 = 1);
-      double magnitude(const hiros::skeletons::types::Vector& t_v);
-      double distance(const hiros::skeletons::types::Vector& t_v1, const hiros::skeletons::types::Vector& t_v2);
 
     } // namespace utils
   } // namespace track

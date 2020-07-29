@@ -420,24 +420,31 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
   }
 
   for (auto& det_kpg : t_detection.skeleton_parts) {
-    for (auto& det_kp : det_kpg.keypoints) {
-      auto track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
-
-      if (track_kp != nullptr) {
-        weight = (m_params.weight_distances_by_confidences) ? det_kp.confidence : 1;
+    for (auto& det_kp : det_kpg.second.keypoints) {
+      if (hiros::skeletons::utils::hasKeypoint(t_track, det_kpg.first, det_kp.first)) {
+        weight = (m_params.weight_distances_by_confidences) ? det_kp.second.confidence : 1;
 
         if (m_params.weight_distances_by_velocities) {
           // Elevate velocity magnitude to the power of 0.25 to have smoother weights
-          weight *= std::pow(1 + utils::magnitude(track_kp->point.velocity), -0.25);
+          weight *= std::pow(1
+                               + hiros::skeletons::utils::magnitude(
+                                   t_track.skeleton_parts.at(det_kpg.first).keypoints.at(det_kp.first).point.velocity),
+                             -0.25);
         }
 
         if (m_params.use_keypoint_positions) {
-          pos_dist += (weight * utils::distance(det_kp.point.position, track_kp->point.position));
+          pos_dist += (weight
+                       * hiros::skeletons::utils::distance(
+                           det_kp.second.point.position,
+                           t_track.skeleton_parts.at(det_kpg.first).keypoints.at(det_kp.first).point.position));
           ++pos_n_kps;
         }
 
         if (m_params.use_keypoint_velocities) {
-          vel_dist += (weight * utils::distance(det_kp.point.velocity, track_kp->point.velocity));
+          vel_dist += (weight
+                       * hiros::skeletons::utils::distance(
+                           det_kp.second.point.velocity,
+                           t_track.skeleton_parts.at(det_kpg.first).keypoints.at(det_kp.first).point.velocity));
           ++vel_n_kps;
         }
       }
@@ -460,9 +467,9 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Ske
 void hiros::track::Tracker::initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton) const
 {
   for (auto& kpg : t_skeleton.skeleton_parts) {
-    for (auto& kp : kpg.keypoints) {
-      kp.point.velocity = hiros::skeletons::types::Velocity();
-      kp.point.acceleration = hiros::skeletons::types::Acceleration();
+    for (auto& kp : kpg.second.keypoints) {
+      kp.second.point.velocity = hiros::skeletons::types::Velocity();
+      kp.second.point.acceleration = hiros::skeletons::types::Acceleration();
     }
   }
 }
@@ -472,12 +479,12 @@ void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::Skel
                                              const double& t_dt) const
 {
   for (auto& det_kpg : t_detection.skeleton_parts) {
-    for (auto& det_kp : det_kpg.keypoints) {
-      auto track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
-
-      if (track_kp != nullptr) {
-        det_kp.point.velocity = computeVelocity(track_kp->point, det_kp.point, t_dt);
-        det_kp.point.acceleration = computeAcceleration(track_kp->point, det_kp.point, t_dt);
+    for (auto& det_kp : det_kpg.second.keypoints) {
+      if (hiros::skeletons::utils::hasKeypoint(t_track, det_kpg.first, det_kp.first)) {
+        det_kp.second.point.velocity = computeVelocity(
+          t_track.skeleton_parts.at(det_kpg.first).keypoints.at(det_kp.first).point, det_kp.second.point, t_dt);
+        det_kp.second.point.acceleration = computeAcceleration(
+          t_track.skeleton_parts.at(det_kpg.first).keypoints.at(det_kp.first).point, det_kp.second.point, t_dt);
       }
     }
   }
@@ -488,11 +495,10 @@ void hiros::track::Tracker::computeVelocities(const hiros::skeletons::types::Ske
                                               const double& t_dt) const
 {
   for (auto& det_kpg : t_detection.skeleton_parts) {
-    for (auto& det_kp : det_kpg.keypoints) {
-      auto track_kp = utils::findKeypoint(t_track, det_kpg.id, det_kp.id);
-
-      if (track_kp != nullptr) {
-        det_kp.point.velocity = computeVelocity(track_kp->point, det_kp.point, t_dt);
+    for (auto& det_kp : det_kpg.second.keypoints) {
+      if (hiros::skeletons::utils::hasKeypoint(t_track, det_kpg.first, det_kp.first)) {
+        det_kp.second.point.velocity = computeVelocity(
+          t_track.skeleton_parts.at(det_kpg.first).keypoints.at(det_kp.first).point, det_kp.second.point, t_dt);
       }
     }
   }
@@ -578,7 +584,7 @@ void hiros::track::Tracker::computeAvgTracks()
 
   for (auto& track : m_tracks_to_merge) {
     auto avg_track = computeAvgTrack(track.second);
-    auto prev_avg_track = utils::findTrack(avg_track.id, prev_avg_tracks);
+    auto prev_avg_track = hiros::skeletons::utils::getSkeleton(prev_avg_tracks, avg_track.id);
 
     if (m_params.filter_keypoint_trajectories) {
       if (prev_avg_track == nullptr) {
