@@ -21,57 +21,64 @@ void hiros::track::StateSpaceFilter3::filter(hiros::skeletons::types::Point& t_p
   t_point.acceleration.z = filters[2].getFilteredSecondDerivative();
 }
 
-hiros::track::Filter::Filter(hiros::skeletons::types::Skeleton& t_skeleton,
+hiros::track::Filter::Filter(hiros::skeletons::types::MarkerSkeleton& t_skeleton,
                              const double& t_time,
                              const double& t_cutoff)
   : m_cutoff(t_cutoff)
 {
-  for (auto& skg : t_skeleton.skeleton_parts) {
-    for (auto& kp : skg.second.keypoints) {
-      m_filters[skg.first][kp.first] = StateSpaceFilter3();
-      m_filters[skg.first][kp.first].filter(kp.second.point, t_time, m_cutoff);
+  for (auto& mkg : t_skeleton.marker_groups) {
+    for (auto& mk : mkg.second.markers) {
+      m_filters[mkg.first][mk.first] = StateSpaceFilter3();
+      m_filters[mkg.first][mk.first].filter(mk.second.point, t_time, m_cutoff);
     }
   }
 }
 
 hiros::track::Filter::~Filter() {}
 
-void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time)
+void hiros::track::Filter::filter(hiros::skeletons::types::MarkerSkeleton& t_skeleton, const double& t_time)
 {
-  for (auto skg_id = m_filters.begin()->first; skg_id < m_filters.end()->first; ++skg_id) {
-    if (m_filters.find(skg_id) != m_filters.end()) {
-      for (auto kp_id = m_filters.at(skg_id).begin()->first; kp_id < m_filters.at(skg_id).end()->first; ++kp_id) {
-        // erase empty keypoints
-        if (m_filters.at(skg_id).find(kp_id) != m_filters.at(skg_id).end()
-            && !hiros::skeletons::utils::hasKeypoint(t_skeleton, skg_id, kp_id)) {
-          m_filters.at(skg_id).erase(kp_id);
+  for (const auto& mkg : m_filters) {
+    auto mkg_id = mkg.first;
+
+    if (m_filters.count(mkg_id) > 0) {
+      for (const auto& mk : m_filters.at(mkg_id)) {
+        auto mk_id = mk.first;
+
+        // erase empty markers
+        if (m_filters.at(mkg_id).count(mk_id) > 0 && !hiros::skeletons::utils::hasMarker(t_skeleton, mkg_id, mk_id)) {
+          m_filters.at(mkg_id).erase(mk_id);
         }
       }
 
-      // erase empty skeleton groups
-      if (m_filters.at(skg_id).empty()) {
-        m_filters.erase(skg_id);
+      // erase empty marker groups
+      if (m_filters.at(mkg_id).empty()) {
+        m_filters.erase(mkg_id);
       }
     }
   }
 
-  for (auto& skg : t_skeleton.skeleton_parts) {
-    // new skeleton group
-    if (m_filters.find(skg.first) == m_filters.end()) {
-      m_filters[skg.first] = {};
-      for (auto& kp : skg.second.keypoints) {
-        m_filters[skg.first][kp.first] = StateSpaceFilter3();
-        m_filters[skg.first][kp.first].filter(kp.second.point, t_time, m_cutoff);
+  for (auto& mkg : t_skeleton.marker_groups) {
+    auto mkg_id = mkg.first;
+
+    // new marker group
+    if (m_filters.count(mkg_id) == 0) {
+      m_filters[mkg_id] = {};
+      for (auto& mk : mkg.second.markers) {
+        m_filters[mkg.first][mk.first] = StateSpaceFilter3();
+        m_filters[mkg.first][mk.first].filter(mk.second.point, t_time, m_cutoff);
       }
     }
     else {
-      for (auto& kp : skg.second.keypoints) {
-        // new keypoint
-        if (m_filters[skg.first].find(kp.first) == m_filters[skg.first].end()) {
-          m_filters[skg.first][kp.first] = StateSpaceFilter3();
+      for (auto& mk : mkg.second.markers) {
+        auto mk_id = mk.first;
+
+        // new marker
+        if (m_filters[mkg_id].count(mk_id) == 0) {
+          m_filters[mkg_id][mk_id] = StateSpaceFilter3();
         }
 
-        m_filters[skg.first][kp.first].filter(kp.second.point, t_time, m_cutoff);
+        m_filters[mkg_id][mk_id].filter(mk.second.point, t_time, m_cutoff);
       }
     }
   }

@@ -21,13 +21,13 @@ namespace hiros {
     class Filter
     {
     public:
-      Filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time, const double& t_cutoff);
+      Filter(hiros::skeletons::types::MarkerSkeleton& t_skeleton, const double& t_time, const double& t_cutoff);
       ~Filter();
 
-      void filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time);
+      void filter(hiros::skeletons::types::MarkerSkeleton& t_skeleton, const double& t_time);
 
     private:
-      // <skeleton_group_id, <keypoint_id, filter>>
+      // <marker_group_id, <marker_id, filter>>
       std::map<int, std::map<int, StateSpaceFilter3>> m_filters;
       double m_cutoff;
     };
