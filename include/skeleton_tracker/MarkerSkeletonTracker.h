@@ -59,8 +59,6 @@ namespace hiros {
       void setupRosTopics();
       void checkFrameIdConsistency(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
 
-      std::string extractImageQualityFromTopicNames(const std::vector<std::string>& t_topic_names) const;
-
       void detectorCallback(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
       void trackOldestFrame();
 

@@ -97,25 +97,6 @@ void hiros::track::MarkerSkeletonTracker::stop()
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...STOPPED" << BASH_MSG_RESET);
 }
 
-std::string hiros::track::MarkerSkeletonTracker::extractImageQualityFromTopicNames(
-  const std::vector<std::string>& t_topic_names) const
-{
-  std::vector<std::string> image_qualities;
-  image_qualities.reserve(t_topic_names.size());
-
-  for (const auto& topic_name : t_topic_names) {
-    auto tmp1 = topic_name.find_last_of("/");
-    std::string tmp2 = topic_name.substr(0, tmp1);
-    auto tmp3 = tmp2.find_last_of("/");
-    image_qualities.push_back(topic_name.substr(tmp3 + 1, tmp1 - tmp3 - 1));
-  }
-
-  return (std::adjacent_find(image_qualities.begin(), image_qualities.end(), std::not_equal_to<std::string>())
-          == image_qualities.end())
-           ? image_qualities.front()
-           : std::string();
-}
-
 void hiros::track::MarkerSkeletonTracker::setupRosTopics()
 {
   for (const auto& topic : m_params.in_skeleton_group_topics) {
@@ -128,12 +109,7 @@ void hiros::track::MarkerSkeletonTracker::setupRosTopics()
     }
   }
 
-  std::string out_msg_topic = m_params.out_msg_topic_name;
-  std::string image_quality = extractImageQualityFromTopicNames(m_params.in_skeleton_group_topics);
-  if (!image_quality.empty()) {
-    out_msg_topic.insert(0, image_quality + "/");
-  }
-  m_out_msg_pub = m_nh.advertise<hiros_skeleton_msgs::MarkerSkeletonGroup>(out_msg_topic, 1);
+  m_out_msg_pub = m_nh.advertise<hiros_skeleton_msgs::MarkerSkeletonGroup>(m_params.out_msg_topic_name, 1);
 }
 
 void hiros::track::MarkerSkeletonTracker::checkFrameIdConsistency(
