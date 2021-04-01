@@ -8,7 +8,7 @@
 #include "opencv2/opencv.hpp"
 
 // Custom Ros Message dependencies
-#include "skeleton_msgs/MarkerSkeletonGroup.h"
+#include "hiros_skeleton_msgs/MarkerSkeletonGroup.h"
 
 // Custom External Packages dependencies
 #include "skeletons/types.h"
@@ -57,15 +57,15 @@ namespace hiros {
     private:
       void stop();
       void setupRosTopics();
-      void checkFrameIdConsistency(skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
+      void checkFrameIdConsistency(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
 
       std::string extractImageQualityFromTopicNames(const std::vector<std::string>& t_topic_names) const;
 
-      void detectorCallback(skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
+      void detectorCallback(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
       void trackOldestFrame();
 
       ros::Time getPreviousSourceTime() const;
-      void addNewSkeletonGroupToBuffer(skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
+      void addNewSkeletonGroupToBuffer(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
       void eraseOldSkeletonGroupFromBuffer();
       void mergeTracks(bool& ready_to_be_published);
       void publishTracks(const hiros::skeletons::types::MarkerSkeletonGroup& t_tracks) const;

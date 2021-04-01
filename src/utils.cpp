@@ -133,12 +133,10 @@ void hiros::track::utils::merge(skeletons::types::MarkerSkeleton& t_sk,
   }
 }
 
-hiros::skeletons::types::Vector hiros::track::utils::wavg(const hiros::skeletons::types::Vector& t_v1,
-                                                          const hiros::skeletons::types::Vector& t_v2,
-                                                          const double& t_w1,
-                                                          const double& t_w2)
+tf2::Vector3
+hiros::track::utils::wavg(const tf2::Vector3& t_v1, const tf2::Vector3& t_v2, const double& t_w1, const double& t_w2)
 {
-  return (t_w1 * t_v1 + t_w2 * t_v2) / (t_w1 + t_w2);
+  return t_v1.lerp(t_v2, t_w2 / (t_w1 + t_w2));
 }
 
 hiros::skeletons::types::Marker hiros::track::utils::wavg(const skeletons::types::Marker& t_mk1,

@@ -30,10 +30,7 @@ namespace hiros {
                  const double& t_w1 = 1,
                  const double& t_w2 = 1,
                  const bool& t_weight_by_confidence = false);
-      hiros::skeletons::types::Vector wavg(const hiros::skeletons::types::Vector& t_v1,
-                                           const hiros::skeletons::types::Vector& t_v2,
-                                           const double& t_w1,
-                                           const double& t_w2);
+      tf2::Vector3 wavg(const tf2::Vector3& t_v1, const tf2::Vector3& t_v2, const double& t_w1, const double& t_w2);
       hiros::skeletons::types::Marker wavg(const hiros::skeletons::types::Marker& t_mk1,
                                            const hiros::skeletons::types::Marker& t_mk2,
                                            const double& t_w1 = 1,

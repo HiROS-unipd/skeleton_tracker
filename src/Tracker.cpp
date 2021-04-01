@@ -136,10 +136,11 @@ void hiros::track::Tracker::setupRosTopics()
   if (!image_quality.empty()) {
     out_msg_topic.insert(0, image_quality + "/");
   }
-  m_out_msg_pub = m_nh.advertise<skeleton_msgs::MarkerSkeletonGroup>(out_msg_topic, 1);
+  m_out_msg_pub = m_nh.advertise<hiros_skeleton_msgs::MarkerSkeletonGroup>(out_msg_topic, 1);
 }
 
-void hiros::track::Tracker::checkFrameIdConsistency(skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
+void hiros::track::Tracker::checkFrameIdConsistency(
+  hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
 {
   if (m_received_frames.size() < m_n_detectors) {
     auto src_frame = t_skeleton_group_msg->src_frame;
@@ -166,7 +167,7 @@ void hiros::track::Tracker::checkFrameIdConsistency(skeleton_msgs::MarkerSkeleto
   }
 }
 
-void hiros::track::Tracker::detectorCallback(skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
+void hiros::track::Tracker::detectorCallback(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
 {
   checkFrameIdConsistency(t_skeleton_group_msg);
 
@@ -222,7 +223,8 @@ ros::Time hiros::track::Tracker::getPreviousSourceTime() const
            : ros::Time();
 }
 
-void hiros::track::Tracker::addNewSkeletonGroupToBuffer(skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
+void hiros::track::Tracker::addNewSkeletonGroupToBuffer(
+  hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
 {
   m_skeleton_groups_buffer.emplace(t_skeleton_group_msg->src_time,
                                    hiros::skeletons::utils::toStruct(*t_skeleton_group_msg));
@@ -505,9 +507,9 @@ hiros::skeletons::types::Velocity hiros::track::Tracker::computeVelocity(const h
                                                                          const hiros::skeletons::types::Point& t_curr,
                                                                          const double& t_dt) const
 {
-  return hiros::skeletons::types::Velocity((t_curr.position.x - t_prev.position.x) / t_dt,
-                                           (t_curr.position.y - t_prev.position.y) / t_dt,
-                                           (t_curr.position.z - t_prev.position.z) / t_dt);
+  return hiros::skeletons::types::Velocity((t_curr.position.x() - t_prev.position.x()) / t_dt,
+                                           (t_curr.position.y() - t_prev.position.y()) / t_dt,
+                                           (t_curr.position.z() - t_prev.position.z()) / t_dt);
 }
 
 hiros::skeletons::types::Acceleration
@@ -515,9 +517,9 @@ hiros::track::Tracker::computeAcceleration(const hiros::skeletons::types::Point&
                                            const hiros::skeletons::types::Point& t_curr,
                                            const double& t_dt) const
 {
-  return hiros::skeletons::types::Acceleration((t_curr.velocity.x - t_prev.velocity.x) / t_dt,
-                                               (t_curr.velocity.y - t_prev.velocity.y) / t_dt,
-                                               (t_curr.velocity.z - t_prev.velocity.z) / t_dt);
+  return hiros::skeletons::types::Acceleration((t_curr.velocity.x() - t_prev.velocity.x()) / t_dt,
+                                               (t_curr.velocity.y() - t_prev.velocity.y()) / t_dt,
+                                               (t_curr.velocity.z() - t_prev.velocity.z()) / t_dt);
 }
 
 void hiros::track::Tracker::updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx)

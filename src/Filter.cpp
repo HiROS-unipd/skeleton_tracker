@@ -8,17 +8,17 @@ void hiros::track::StateSpaceFilter3::filter(hiros::skeletons::types::Point& t_p
                                              const double& t_time,
                                              const double& t_cutoff)
 {
-  t_point.position.x = filters[0].filter(t_point.position.x, t_time, t_cutoff);
-  t_point.position.y = filters[1].filter(t_point.position.y, t_time, t_cutoff);
-  t_point.position.z = filters[2].filter(t_point.position.z, t_time, t_cutoff);
+  t_point.position.setX(filters[0].filter(t_point.position.x(), t_time, t_cutoff));
+  t_point.position.setY(filters[1].filter(t_point.position.y(), t_time, t_cutoff));
+  t_point.position.setZ(filters[2].filter(t_point.position.z(), t_time, t_cutoff));
 
-  t_point.velocity.x = filters[0].getFilteredFirstDerivative();
-  t_point.velocity.y = filters[1].getFilteredFirstDerivative();
-  t_point.velocity.z = filters[2].getFilteredFirstDerivative();
+  t_point.velocity.setX(filters[0].getFilteredFirstDerivative());
+  t_point.velocity.setY(filters[1].getFilteredFirstDerivative());
+  t_point.velocity.setZ(filters[2].getFilteredFirstDerivative());
 
-  t_point.acceleration.x = filters[0].getFilteredSecondDerivative();
-  t_point.acceleration.y = filters[1].getFilteredSecondDerivative();
-  t_point.acceleration.z = filters[2].getFilteredSecondDerivative();
+  t_point.acceleration.setX(filters[0].getFilteredSecondDerivative());
+  t_point.acceleration.setY(filters[1].getFilteredSecondDerivative());
+  t_point.acceleration.setZ(filters[2].getFilteredSecondDerivative());
 }
 
 hiros::track::Filter::Filter(hiros::skeletons::types::MarkerSkeleton& t_skeleton,

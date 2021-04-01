@@ -6,14 +6,14 @@ add_compile_options(-std=c++14)
 
 # Find catkin macros and libraries if COMPONENTS list like find_package(catkin
 # REQUIRED COMPONENTS xyz) is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs skeleton_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp std_msgs hiros_skeleton_msgs)
 
 # System dependencies are found with CMake's conventions
 find_package(OpenCV)
 find_package(RTB_Filter)
 
 # Declare the package to be exported and made available to ros
-catkin_package(CATKIN_DEPENDS std_msgs skeleton_msgs)
+catkin_package(CATKIN_DEPENDS std_msgs hiros_skeleton_msgs)
 
 # ##############################################################################
 # Build ##
