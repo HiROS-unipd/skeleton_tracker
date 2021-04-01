@@ -36,6 +36,26 @@ namespace hiros {
                                            const double& t_w1 = 1,
                                            const double& t_w2 = 1);
 
+      bool isEmpty(const hiros::skeletons::types::OrientationSkeleton& t_skeleton);
+      int numberOfOrientations(const hiros::skeletons::types::OrientationSkeleton& t_skeleton);
+      void merge(hiros::skeletons::types::OrientationSkeleton& t_s1,
+                 const hiros::skeletons::types::OrientationSkeleton& t_s2,
+                 const double& t_w1 = 1,
+                 const double& t_w2 = 1,
+                 const bool& t_weight_by_confidence = false);
+      void merge(hiros::skeletons::types::OrientationSkeleton& t_sk,
+                 const hiros::skeletons::types::OrientationGroup& t_org,
+                 const hiros::skeletons::types::Orientation& t_or,
+                 const double& t_w1 = 1,
+                 const double& t_w2 = 1,
+                 const bool& t_weight_by_confidence = false);
+      tf2::Quaternion
+      wavg(const tf2::Quaternion& t_q1, const tf2::Quaternion& t_q2, const double& t_w1 = 1, const double& t_w2 = 1);
+      hiros::skeletons::types::Orientation wavg(const hiros::skeletons::types::Orientation& t_or1,
+                                                const hiros::skeletons::types::Orientation& t_or2,
+                                                const double& t_w1 = 1,
+                                                const double& t_w2 = 1);
+
     } // namespace utils
   } // namespace track
 } // namespace hiros

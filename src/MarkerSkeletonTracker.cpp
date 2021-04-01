@@ -7,22 +7,19 @@
 #include "skeletons/utils.h"
 
 // Internal dependencies
-#include "skeleton_tracker/Tracker.h"
+#include "skeleton_tracker/MarkerSkeletonTracker.h"
 #include "skeleton_tracker/utils.h"
 
-hiros::track::Tracker::Tracker()
+hiros::track::MarkerSkeletonTracker::MarkerSkeletonTracker()
   : m_nh("~")
   , m_node_namespace(m_nh.getNamespace())
   , m_last_track_id(-1)
   , m_configured(false)
-{
-  m_detections = skeletons::types::MarkerSkeletonGroup();
-  m_tracks = skeletons::types::MarkerSkeletonGroup();
-}
+{}
 
-hiros::track::Tracker::~Tracker() {}
+hiros::track::MarkerSkeletonTracker::~MarkerSkeletonTracker() {}
 
-void hiros::track::Tracker::configure()
+void hiros::track::MarkerSkeletonTracker::configure()
 {
   ROS_INFO_STREAM("Hi-ROS Skeleton Tracker...Configuring");
 
@@ -71,7 +68,7 @@ void hiros::track::Tracker::configure()
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...CONFIGURED" << BASH_MSG_RESET);
 }
 
-void hiros::track::Tracker::start()
+void hiros::track::MarkerSkeletonTracker::start()
 {
   ROS_INFO_STREAM("Hi-ROS Skeleton Tracker...Starting");
 
@@ -84,7 +81,7 @@ void hiros::track::Tracker::start()
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...RUNNING" << BASH_MSG_RESET);
 }
 
-void hiros::track::Tracker::stop()
+void hiros::track::MarkerSkeletonTracker::stop()
 {
   ROS_INFO_STREAM("Hi-ROS Skeleton Tracker...Stopping");
 
@@ -100,8 +97,8 @@ void hiros::track::Tracker::stop()
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...STOPPED" << BASH_MSG_RESET);
 }
 
-std::string
-hiros::track::Tracker::extractImageQualityFromTopicNames(const std::vector<std::string>& t_topic_names) const
+std::string hiros::track::MarkerSkeletonTracker::extractImageQualityFromTopicNames(
+  const std::vector<std::string>& t_topic_names) const
 {
   std::vector<std::string> image_qualities;
   image_qualities.reserve(t_topic_names.size());
@@ -119,10 +116,10 @@ hiros::track::Tracker::extractImageQualityFromTopicNames(const std::vector<std::
            : std::string();
 }
 
-void hiros::track::Tracker::setupRosTopics()
+void hiros::track::MarkerSkeletonTracker::setupRosTopics()
 {
   for (const auto& topic : m_params.in_skeleton_group_topics) {
-    m_in_skeleton_group_subs.push_back(m_nh.subscribe(topic, 1, &Tracker::detectorCallback, this));
+    m_in_skeleton_group_subs.push_back(m_nh.subscribe(topic, 1, &MarkerSkeletonTracker::detectorCallback, this));
   }
 
   for (const auto& sub : m_in_skeleton_group_subs) {
@@ -139,7 +136,7 @@ void hiros::track::Tracker::setupRosTopics()
   m_out_msg_pub = m_nh.advertise<hiros_skeleton_msgs::MarkerSkeletonGroup>(out_msg_topic, 1);
 }
 
-void hiros::track::Tracker::checkFrameIdConsistency(
+void hiros::track::MarkerSkeletonTracker::checkFrameIdConsistency(
   hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
 {
   if (m_received_frames.size() < m_n_detectors) {
@@ -167,7 +164,8 @@ void hiros::track::Tracker::checkFrameIdConsistency(
   }
 }
 
-void hiros::track::Tracker::detectorCallback(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
+void hiros::track::MarkerSkeletonTracker::detectorCallback(
+  hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
 {
   checkFrameIdConsistency(t_skeleton_group_msg);
 
@@ -196,7 +194,7 @@ void hiros::track::Tracker::detectorCallback(hiros_skeleton_msgs::MarkerSkeleton
   }
 }
 
-void hiros::track::Tracker::trackOldestFrame()
+void hiros::track::MarkerSkeletonTracker::trackOldestFrame()
 {
   m_tracks.src_time = m_skeleton_groups_buffer.begin()->second.src_time;
   m_tracks.src_frame = m_skeleton_groups_buffer.begin()->second.src_frame;
@@ -211,7 +209,7 @@ void hiros::track::Tracker::trackOldestFrame()
   eraseOldSkeletonGroupFromBuffer();
 }
 
-ros::Time hiros::track::Tracker::getPreviousSourceTime() const
+ros::Time hiros::track::MarkerSkeletonTracker::getPreviousSourceTime() const
 {
   return !m_track_id_to_time_stamp_map.empty()
            ? (std::max_element(m_track_id_to_time_stamp_map.begin(),
@@ -223,19 +221,19 @@ ros::Time hiros::track::Tracker::getPreviousSourceTime() const
            : ros::Time();
 }
 
-void hiros::track::Tracker::addNewSkeletonGroupToBuffer(
+void hiros::track::MarkerSkeletonTracker::addNewSkeletonGroupToBuffer(
   hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
 {
   m_skeleton_groups_buffer.emplace(t_skeleton_group_msg->src_time,
                                    hiros::skeletons::utils::toStruct(*t_skeleton_group_msg));
 }
 
-void hiros::track::Tracker::eraseOldSkeletonGroupFromBuffer()
+void hiros::track::MarkerSkeletonTracker::eraseOldSkeletonGroupFromBuffer()
 {
   m_skeleton_groups_buffer.erase(m_skeleton_groups_buffer.begin());
 }
 
-void hiros::track::Tracker::mergeTracks(bool& t_ready_to_be_published)
+void hiros::track::MarkerSkeletonTracker::mergeTracks(bool& t_ready_to_be_published)
 {
   t_ready_to_be_published = false;
 
@@ -277,13 +275,14 @@ void hiros::track::Tracker::mergeTracks(bool& t_ready_to_be_published)
   }
 }
 
-void hiros::track::Tracker::publishTracks(const hiros::skeletons::types::MarkerSkeletonGroup& t_tracks) const
+void hiros::track::MarkerSkeletonTracker::publishTracks(
+  const hiros::skeletons::types::MarkerSkeletonGroup& t_tracks) const
 {
   m_out_msg_pub.publish(
     skeletons::utils::toMsg(ros::Time::now(), m_frame_id, ros::Time(t_tracks.src_time), t_tracks.src_frame, t_tracks));
 }
 
-void hiros::track::Tracker::fillDetections()
+void hiros::track::MarkerSkeletonTracker::fillDetections()
 {
   m_detections.marker_skeletons.clear();
 
@@ -296,7 +295,7 @@ void hiros::track::Tracker::fillDetections()
   }
 }
 
-void hiros::track::Tracker::createCostMatrix()
+void hiros::track::MarkerSkeletonTracker::createCostMatrix()
 {
   if (m_tracks.marker_skeletons.empty() || m_detections.marker_skeletons.empty()) {
     m_cost_matrix = cv::Mat_<double>();
@@ -321,13 +320,13 @@ void hiros::track::Tracker::createCostMatrix()
   utils::replaceNans(m_cost_matrix);
 }
 
-void hiros::track::Tracker::solveMunkres()
+void hiros::track::MarkerSkeletonTracker::solveMunkres()
 {
   // Munkres: rows = tracks, cols = detections
   m_munkres_matrix = m_munkres.solve(m_cost_matrix);
 }
 
-void hiros::track::Tracker::removeDistantMatches()
+void hiros::track::MarkerSkeletonTracker::removeDistantMatches()
 {
   if (m_params.max_distance >= 0) {
     for (int r = 0; r < m_munkres_matrix.rows; ++r) {
@@ -340,7 +339,7 @@ void hiros::track::Tracker::removeDistantMatches()
   }
 }
 
-void hiros::track::Tracker::updateDetectedTracks()
+void hiros::track::MarkerSkeletonTracker::updateDetectedTracks()
 {
   for (unsigned int track_idx = 0; track_idx < m_tracks.marker_skeletons.size(); ++track_idx) {
     for (unsigned int det_idx = 0; det_idx < m_detections.marker_skeletons.size(); ++det_idx) {
@@ -349,7 +348,7 @@ void hiros::track::Tracker::updateDetectedTracks()
   }
 }
 
-void hiros::track::Tracker::addNewTracks()
+void hiros::track::MarkerSkeletonTracker::addNewTracks()
 {
   if (m_detections.marker_skeletons.empty()) {
     return;
@@ -379,7 +378,7 @@ void hiros::track::Tracker::addNewTracks()
   }
 }
 
-void hiros::track::Tracker::removeUnassociatedTracks()
+void hiros::track::MarkerSkeletonTracker::removeUnassociatedTracks()
 {
   int id;
   ros::Duration delta_t;
@@ -403,8 +402,8 @@ void hiros::track::Tracker::removeUnassociatedTracks()
   }
 }
 
-double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::MarkerSkeleton& t_track,
-                                              hiros::skeletons::types::MarkerSkeleton& t_detection) const
+double hiros::track::MarkerSkeletonTracker::computeDistance(const hiros::skeletons::types::MarkerSkeleton& t_track,
+                                                            hiros::skeletons::types::MarkerSkeleton& t_detection) const
 {
   double pos_dist = 0;
   double vel_dist = 0;
@@ -463,7 +462,7 @@ double hiros::track::Tracker::computeDistance(const hiros::skeletons::types::Mar
                                        : std::numeric_limits<double>::quiet_NaN();
 }
 
-void hiros::track::Tracker::initializeVelAndAcc(hiros::skeletons::types::MarkerSkeleton& t_skeleton) const
+void hiros::track::MarkerSkeletonTracker::initializeVelAndAcc(hiros::skeletons::types::MarkerSkeleton& t_skeleton) const
 {
   for (auto& mkg : t_skeleton.marker_groups) {
     for (auto& mk : mkg.second.markers) {
@@ -473,9 +472,9 @@ void hiros::track::Tracker::initializeVelAndAcc(hiros::skeletons::types::MarkerS
   }
 }
 
-void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::MarkerSkeleton& t_track,
-                                             hiros::skeletons::types::MarkerSkeleton& t_detection,
-                                             const double& t_dt) const
+void hiros::track::MarkerSkeletonTracker::computeVelAndAcc(const hiros::skeletons::types::MarkerSkeleton& t_track,
+                                                           hiros::skeletons::types::MarkerSkeleton& t_detection,
+                                                           const double& t_dt) const
 {
   for (auto& det_mkg : t_detection.marker_groups) {
     for (auto& det_mk : det_mkg.second.markers) {
@@ -489,9 +488,9 @@ void hiros::track::Tracker::computeVelAndAcc(const hiros::skeletons::types::Mark
   }
 }
 
-void hiros::track::Tracker::computeVelocities(const hiros::skeletons::types::MarkerSkeleton& t_track,
-                                              hiros::skeletons::types::MarkerSkeleton& t_detection,
-                                              const double& t_dt) const
+void hiros::track::MarkerSkeletonTracker::computeVelocities(const hiros::skeletons::types::MarkerSkeleton& t_track,
+                                                            hiros::skeletons::types::MarkerSkeleton& t_detection,
+                                                            const double& t_dt) const
 {
   for (auto& det_mkg : t_detection.marker_groups) {
     for (auto& det_mk : det_mkg.second.markers) {
@@ -503,9 +502,10 @@ void hiros::track::Tracker::computeVelocities(const hiros::skeletons::types::Mar
   }
 }
 
-hiros::skeletons::types::Velocity hiros::track::Tracker::computeVelocity(const hiros::skeletons::types::Point& t_prev,
-                                                                         const hiros::skeletons::types::Point& t_curr,
-                                                                         const double& t_dt) const
+hiros::skeletons::types::Velocity
+hiros::track::MarkerSkeletonTracker::computeVelocity(const hiros::skeletons::types::Point& t_prev,
+                                                     const hiros::skeletons::types::Point& t_curr,
+                                                     const double& t_dt) const
 {
   return hiros::skeletons::types::Velocity((t_curr.position.x() - t_prev.position.x()) / t_dt,
                                            (t_curr.position.y() - t_prev.position.y()) / t_dt,
@@ -513,16 +513,17 @@ hiros::skeletons::types::Velocity hiros::track::Tracker::computeVelocity(const h
 }
 
 hiros::skeletons::types::Acceleration
-hiros::track::Tracker::computeAcceleration(const hiros::skeletons::types::Point& t_prev,
-                                           const hiros::skeletons::types::Point& t_curr,
-                                           const double& t_dt) const
+hiros::track::MarkerSkeletonTracker::computeAcceleration(const hiros::skeletons::types::Point& t_prev,
+                                                         const hiros::skeletons::types::Point& t_curr,
+                                                         const double& t_dt) const
 {
   return hiros::skeletons::types::Acceleration((t_curr.velocity.x() - t_prev.velocity.x()) / t_dt,
                                                (t_curr.velocity.y() - t_prev.velocity.y()) / t_dt,
                                                (t_curr.velocity.z() - t_prev.velocity.z()) / t_dt);
 }
 
-void hiros::track::Tracker::updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx)
+void hiros::track::MarkerSkeletonTracker::updateDetectedTrack(const unsigned int& t_track_idx,
+                                                              const unsigned int& t_det_idx)
 {
   if (m_munkres.match(t_track_idx, t_det_idx)) {
     int id = m_tracks.marker_skeletons.at(t_track_idx).id;
@@ -545,7 +546,7 @@ void hiros::track::Tracker::updateDetectedTrack(const unsigned int& t_track_idx,
   }
 }
 
-void hiros::track::Tracker::addNewTrack(const hiros::skeletons::types::MarkerSkeleton& t_detection)
+void hiros::track::MarkerSkeletonTracker::addNewTrack(const hiros::skeletons::types::MarkerSkeleton& t_detection)
 {
   if (utils::numberOfMarkers(t_detection) >= m_params.min_markers) {
     m_tracks.addMarkerSkeleton(t_detection);
@@ -563,17 +564,17 @@ void hiros::track::Tracker::addNewTrack(const hiros::skeletons::types::MarkerSke
   }
 }
 
-bool hiros::track::Tracker::unassociatedDetection(const unsigned int& t_det_idx) const
+bool hiros::track::MarkerSkeletonTracker::unassociatedDetection(const unsigned int& t_det_idx) const
 {
   return !m_munkres.colHasMatch(t_det_idx);
 }
 
-bool hiros::track::Tracker::unassociatedTrack(const unsigned int& t_track_idx) const
+bool hiros::track::MarkerSkeletonTracker::unassociatedTrack(const unsigned int& t_track_idx) const
 {
   return !m_munkres.rowHasMatch(t_track_idx);
 }
 
-void hiros::track::Tracker::computeAvgTracks()
+void hiros::track::MarkerSkeletonTracker::computeAvgTracks()
 {
   auto prev_avg_tracks = m_avg_tracks;
 
@@ -609,7 +610,7 @@ void hiros::track::Tracker::computeAvgTracks()
   }
 }
 
-double hiros::track::Tracker::computeAvgSrcTime() const
+double hiros::track::MarkerSkeletonTracker::computeAvgSrcTime() const
 {
   double avg_src_time = m_frames_to_merge.front().first.toSec();
 
@@ -620,8 +621,8 @@ double hiros::track::Tracker::computeAvgSrcTime() const
   return avg_src_time;
 }
 
-hiros::skeletons::types::MarkerSkeleton
-hiros::track::Tracker::computeAvgTrack(const std::vector<hiros::skeletons::types::MarkerSkeleton>& t_tracks) const
+hiros::skeletons::types::MarkerSkeleton hiros::track::MarkerSkeletonTracker::computeAvgTrack(
+  const std::vector<hiros::skeletons::types::MarkerSkeleton>& t_tracks) const
 {
   hiros::skeletons::types::MarkerSkeleton avg_sk = t_tracks.front();
 

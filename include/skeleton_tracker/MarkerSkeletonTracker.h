@@ -1,5 +1,5 @@
-#ifndef hiros_skeleton_tracker_Tracker_h
-#define hiros_skeleton_tracker_Tracker_h
+#ifndef hiros_skeleton_tracker_MarkerSkeletonTracker_h
+#define hiros_skeleton_tracker_MarkerSkeletonTracker_h
 
 // ROS dependencies
 #include <ros/ros.h>
@@ -23,7 +23,7 @@
 namespace hiros {
   namespace track {
 
-    struct TrackerParameters
+    struct MarkerSkeletonTrackerParameters
     {
       std::string node_name;
 
@@ -45,11 +45,11 @@ namespace hiros {
       double filter_cutoff_frequency;
     };
 
-    class Tracker
+    class MarkerSkeletonTracker
     {
     public:
-      Tracker();
-      ~Tracker();
+      MarkerSkeletonTracker();
+      ~MarkerSkeletonTracker();
 
       void configure();
       void start();
@@ -106,7 +106,7 @@ namespace hiros {
       ros::NodeHandle m_nh;
       std::string m_node_namespace;
 
-      TrackerParameters m_params;
+      MarkerSkeletonTrackerParameters m_params;
 
       std::string m_frame_id;
       unsigned long m_n_detectors;
@@ -132,9 +132,9 @@ namespace hiros {
       // map<track_id, vector<skeleton_tracks>>
       std::map<int, std::vector<skeletons::types::MarkerSkeleton>> m_tracks_to_merge;
 
-      skeletons::types::MarkerSkeletonGroup m_detections;
-      skeletons::types::MarkerSkeletonGroup m_tracks;
-      skeletons::types::MarkerSkeletonGroup m_avg_tracks;
+      skeletons::types::MarkerSkeletonGroup m_detections{};
+      skeletons::types::MarkerSkeletonGroup m_tracks{};
+      skeletons::types::MarkerSkeletonGroup m_avg_tracks{};
 
       bool m_configured;
     };
