@@ -383,26 +383,27 @@ double hiros::track::OrientationSkeletonTracker::computeDistance(
 
         if (m_params.weight_distances_by_velocities) {
           // Elevate velocity magnitude to the power of 0.25 to have smoother weights
-          weight *=
-            std::pow(1
-                       + hiros::skeletons::utils::magnitude(
-                         t_track.orientation_groups.at(det_org.first).orientations.at(det_or.first).angular_velocity),
-                     -0.25);
+          weight *= std::pow(
+            1
+              + hiros::skeletons::utils::magnitude(
+                t_track.orientation_groups.at(det_org.first).orientations.at(det_or.first).mimu.angular_velocity),
+            -0.25);
         }
 
         if (m_params.use_orientations) {
           pos_dist += (weight
                        * hiros::skeletons::utils::distance(
-                         det_or.second.orientation,
-                         t_track.orientation_groups.at(det_org.first).orientations.at(det_or.first).orientation));
+                         det_or.second.mimu.orientation,
+                         t_track.orientation_groups.at(det_org.first).orientations.at(det_or.first).mimu.orientation));
           ++pos_n_ors;
         }
 
         if (m_params.use_velocities) {
-          vel_dist += (weight
-                       * hiros::skeletons::utils::distance(
-                         det_or.second.angular_velocity,
-                         t_track.orientation_groups.at(det_org.first).orientations.at(det_or.first).angular_velocity));
+          vel_dist +=
+            (weight
+             * hiros::skeletons::utils::distance(
+               det_or.second.mimu.angular_velocity,
+               t_track.orientation_groups.at(det_org.first).orientations.at(det_or.first).mimu.angular_velocity));
           ++vel_n_ors;
         }
       }

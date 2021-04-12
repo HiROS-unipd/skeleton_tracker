@@ -237,11 +237,12 @@ hiros::skeletons::types::Orientation hiros::track::utils::wavg(const skeletons::
   skeletons::types::Orientation avg_or;
 
   avg_or.id = t_or1.id;
-  avg_or.frame_id = t_or1.frame_id;
   avg_or.confidence = (t_w1 * t_or1.confidence + t_w2 * t_or2.confidence) / (t_w1 + t_w2);
-  avg_or.orientation = wavg(t_or1.orientation, t_or2.orientation, t_w1, t_w2);
-  avg_or.angular_velocity = wavg(t_or1.angular_velocity, t_or2.angular_velocity, t_w1, t_w2);
-  avg_or.linear_acceleration = wavg(t_or1.linear_acceleration, t_or2.linear_acceleration, t_w1, t_w2);
+  avg_or.mimu.frame_id = t_or1.mimu.frame_id;
+  avg_or.mimu.orientation = wavg(t_or1.mimu.orientation, t_or2.mimu.orientation, t_w1, t_w2);
+  avg_or.mimu.angular_velocity = wavg(t_or1.mimu.angular_velocity, t_or2.mimu.angular_velocity, t_w1, t_w2);
+  avg_or.mimu.linear_acceleration = wavg(t_or1.mimu.linear_acceleration, t_or2.mimu.linear_acceleration, t_w1, t_w2);
+  avg_or.mimu.magnetic_field = wavg(t_or1.mimu.magnetic_field, t_or2.mimu.magnetic_field, t_w1, t_w2);
 
   return avg_or;
 }
