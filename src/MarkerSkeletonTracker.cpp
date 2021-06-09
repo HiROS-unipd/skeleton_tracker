@@ -156,7 +156,7 @@ void hiros::track::MarkerSkeletonTracker::detectorCallback(
     publishTracks(m_tracks);
   }
   else {
-    bool ready_to_publish;
+    bool ready_to_publish = false;
 
     while ((t_skeleton_group_msg->src_time.toSec() - m_skeleton_groups_buffer.begin()->second.src_time)
              >= m_params.fixed_delay
@@ -588,6 +588,10 @@ void hiros::track::MarkerSkeletonTracker::computeAvgTracks()
 
 double hiros::track::MarkerSkeletonTracker::computeAvgSrcTime() const
 {
+  if (m_frames_to_merge.empty()) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+
   double avg_src_time = m_frames_to_merge.front().first.toSec();
 
   for (unsigned int i = 1; i < m_frames_to_merge.size(); ++i) {
