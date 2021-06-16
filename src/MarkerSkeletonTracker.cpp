@@ -524,7 +524,7 @@ void hiros::track::MarkerSkeletonTracker::updateDetectedTrack(const unsigned int
 
 void hiros::track::MarkerSkeletonTracker::addNewTrack(const hiros::skeletons::types::MarkerSkeleton& t_detection)
 {
-  if (utils::numberOfMarkers(t_detection) >= m_params.min_markers) {
+  if (hiros::skeletons::utils::numberOfMarkers(t_detection) >= m_params.min_markers) {
     m_tracks.addMarkerSkeleton(t_detection);
     m_tracks.marker_skeletons.back().id = ++m_last_track_id;
     initializeVelAndAcc(m_tracks.marker_skeletons.back());

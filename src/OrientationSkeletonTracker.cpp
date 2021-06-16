@@ -439,7 +439,7 @@ void hiros::track::OrientationSkeletonTracker::updateDetectedTrack(const unsigne
 void hiros::track::OrientationSkeletonTracker::addNewTrack(
   const hiros::skeletons::types::OrientationSkeleton& t_detection)
 {
-  if (utils::numberOfOrientations(t_detection) >= m_params.min_orientations) {
+  if (hiros::skeletons::utils::numberOfOrientations(t_detection) >= m_params.min_orientations) {
     m_tracks.addOrientationSkeleton(t_detection);
     m_tracks.orientation_skeletons.back().id = ++m_last_track_id;
 

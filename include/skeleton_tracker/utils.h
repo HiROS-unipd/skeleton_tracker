@@ -18,7 +18,6 @@ namespace hiros {
       void minWithIndex(const cv::Mat_<double>& t_mat, double& t_min, unsigned int& t_row, unsigned int& t_col);
 
       bool isEmpty(const hiros::skeletons::types::MarkerSkeleton& t_skeleton);
-      int numberOfMarkers(const hiros::skeletons::types::MarkerSkeleton& t_skeleton);
       void merge(hiros::skeletons::types::MarkerSkeleton& t_s1,
                  const hiros::skeletons::types::MarkerSkeleton& t_s2,
                  const double& t_w1 = 1,
@@ -37,7 +36,6 @@ namespace hiros {
                                            const double& t_w2 = 1);
 
       bool isEmpty(const hiros::skeletons::types::OrientationSkeleton& t_skeleton);
-      int numberOfOrientations(const hiros::skeletons::types::OrientationSkeleton& t_skeleton);
       void merge(hiros::skeletons::types::OrientationSkeleton& t_s1,
                  const hiros::skeletons::types::OrientationSkeleton& t_s2,
                  const double& t_w1 = 1,
