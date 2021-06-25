@@ -86,6 +86,17 @@ bool hiros::track::utils::isEmpty(const hiros::skeletons::types::MarkerSkeleton&
   return true;
 }
 
+bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::MarkerSkeleton& t_skeleton)
+{
+  for (auto& mkg : t_skeleton.marker_groups) {
+    if (!mkg.markers.empty()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void hiros::track::utils::merge(hiros::skeletons::types::MarkerSkeleton& t_s1,
                                 const skeletons::types::MarkerSkeleton& t_s2,
                                 const double& t_w1,
@@ -152,6 +163,17 @@ bool hiros::track::utils::isEmpty(const hiros::skeletons::types::OrientationSkel
 {
   for (auto& org : t_skeleton.orientation_groups) {
     if (!org.second.orientations.empty()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::OrientationSkeleton& t_skeleton)
+{
+  for (auto& org : t_skeleton.orientation_groups) {
+    if (!org.orientations.empty()) {
       return false;
     }
   }

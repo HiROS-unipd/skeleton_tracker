@@ -14,6 +14,7 @@
 #include "skeletons/types.h"
 
 // Custom Internal dependencies
+#include "skeleton_tracker/Buffer.h"
 #include "skeleton_tracker/Munkres.h"
 
 #define BASH_MSG_RESET "\033[0m"
@@ -21,6 +22,8 @@
 
 namespace hiros {
   namespace track {
+
+    typedef Buffer<hiros_skeleton_msgs::OrientationSkeletonGroupConstPtr> OrientationSkeletonGroupsBuffer;
 
     struct OrientationSkeletonTrackerParameters
     {
@@ -97,8 +100,7 @@ namespace hiros {
       // vector<pair<src_frame, frame_id>>
       std::vector<std::pair<std::string, std::string>> m_received_frames;
 
-      // map<src_time, orientation_skeleton_group>
-      std::map<ros::Time, skeletons::types::OrientationSkeletonGroup> m_skeleton_groups_buffer;
+      OrientationSkeletonGroupsBuffer m_skeleton_groups_buffer;
 
       Munkres m_munkres;
       cv::Mat_<double> m_cost_matrix;

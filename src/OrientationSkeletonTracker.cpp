@@ -150,8 +150,7 @@ void hiros::track::OrientationSkeletonTracker::detectorCallback(
   else {
     bool ready_to_publish;
 
-    while ((t_skeleton_group_msg->src_time.toSec() - m_skeleton_groups_buffer.begin()->second.src_time)
-             >= m_params.fixed_delay
+    while ((t_skeleton_group_msg->src_time - m_skeleton_groups_buffer.get_src_time()).toSec() >= m_params.fixed_delay
            && !m_skeleton_groups_buffer.empty()) {
       trackOldestFrame();
       mergeTracks(ready_to_publish);
@@ -164,8 +163,8 @@ void hiros::track::OrientationSkeletonTracker::detectorCallback(
 
 void hiros::track::OrientationSkeletonTracker::trackOldestFrame()
 {
-  m_tracks.src_time = m_skeleton_groups_buffer.begin()->second.src_time;
-  m_tracks.src_frame = m_skeleton_groups_buffer.begin()->second.src_frame;
+  m_tracks.src_time = m_skeleton_groups_buffer.get_src_time().toSec();
+  m_tracks.src_frame = m_skeleton_groups_buffer.get_src_frame();
 
   fillDetections();
   createCostMatrix();
@@ -192,13 +191,12 @@ ros::Time hiros::track::OrientationSkeletonTracker::getPreviousSourceTime() cons
 void hiros::track::OrientationSkeletonTracker::addNewSkeletonGroupToBuffer(
   hiros_skeleton_msgs::OrientationSkeletonGroupConstPtr t_skeleton_group_msg)
 {
-  m_skeleton_groups_buffer.emplace(t_skeleton_group_msg->src_time,
-                                   hiros::skeletons::utils::toStruct(*t_skeleton_group_msg));
+  m_skeleton_groups_buffer.push_back(t_skeleton_group_msg);
 }
 
 void hiros::track::OrientationSkeletonTracker::eraseOldSkeletonGroupFromBuffer()
 {
-  m_skeleton_groups_buffer.erase(m_skeleton_groups_buffer.begin());
+  m_skeleton_groups_buffer.pop_back();
 }
 
 void hiros::track::OrientationSkeletonTracker::mergeTracks(bool& t_ready_to_be_published)
@@ -254,11 +252,11 @@ void hiros::track::OrientationSkeletonTracker::fillDetections()
 {
   m_detections.orientation_skeletons.clear();
 
-  m_detections.src_time = m_skeleton_groups_buffer.begin()->second.src_time;
-  m_detections.src_frame = m_skeleton_groups_buffer.begin()->second.src_frame;
-  for (const auto& skeleton : m_skeleton_groups_buffer.begin()->second.orientation_skeletons) {
+  m_detections.src_time = m_skeleton_groups_buffer.get_src_time().toSec();
+  m_detections.src_frame = m_skeleton_groups_buffer.get_src_frame();
+  for (const auto& skeleton : m_skeleton_groups_buffer.get_skeleton_group()->orientation_skeletons) {
     if (!utils::isEmpty(skeleton)) {
-      m_detections.addOrientationSkeleton(skeleton);
+      m_detections.addOrientationSkeleton(hiros::skeletons::utils::toStruct(skeleton));
     }
   }
 }
@@ -355,7 +353,7 @@ void hiros::track::OrientationSkeletonTracker::removeUnassociatedTracks()
        ++track_idx, ++idx_to_erase) {
     if (unassociatedTrack(track_idx)) {
       id = m_tracks.orientation_skeletons.at(idx_to_erase).id;
-      delta_t = m_skeleton_groups_buffer.begin()->first - m_track_id_to_time_stamp_map.at(id);
+      delta_t = m_skeleton_groups_buffer.get_src_time() - m_track_id_to_time_stamp_map.at(id);
 
       if (delta_t > m_params.max_delta_t) {
         m_tracks_to_merge.erase(id);
@@ -429,7 +427,7 @@ void hiros::track::OrientationSkeletonTracker::updateDetectedTrack(const unsigne
   if (m_munkres.match(t_track_idx, t_det_idx)) {
     int id = m_tracks.orientation_skeletons.at(t_track_idx).id;
 
-    m_track_id_to_time_stamp_map.at(id) = m_skeleton_groups_buffer.begin()->first;
+    m_track_id_to_time_stamp_map.at(id) = m_skeleton_groups_buffer.get_src_time();
 
     m_tracks.orientation_skeletons.at(t_track_idx) = m_detections.orientation_skeletons.at(t_det_idx);
     m_tracks.orientation_skeletons.at(t_track_idx).id = id;
@@ -443,7 +441,7 @@ void hiros::track::OrientationSkeletonTracker::addNewTrack(
     m_tracks.addOrientationSkeleton(t_detection);
     m_tracks.orientation_skeletons.back().id = ++m_last_track_id;
 
-    m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_groups_buffer.begin()->first);
+    m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_groups_buffer.get_src_time());
   }
 }
 

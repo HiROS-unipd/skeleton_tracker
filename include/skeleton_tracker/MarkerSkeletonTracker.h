@@ -14,6 +14,7 @@
 #include "skeletons/types.h"
 
 // Custom Internal dependencies
+#include "skeleton_tracker/Buffer.h"
 #include "skeleton_tracker/Filter.h"
 #include "skeleton_tracker/Munkres.h"
 
@@ -22,6 +23,8 @@
 
 namespace hiros {
   namespace track {
+
+    typedef Buffer<hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr> MarkerSkeletonGroupsBuffer;
 
     struct MarkerSkeletonTrackerParameters
     {
@@ -114,8 +117,7 @@ namespace hiros {
       // vector<pair<src_frame, frame_id>>
       std::vector<std::pair<std::string, std::string>> m_received_frames;
 
-      // map<src_time, marker_skeleton_group>
-      std::map<ros::Time, skeletons::types::MarkerSkeletonGroup> m_skeleton_groups_buffer;
+      MarkerSkeletonGroupsBuffer m_skeleton_groups_buffer;
 
       Munkres m_munkres;
       cv::Mat_<double> m_cost_matrix;
