@@ -341,13 +341,15 @@ void hiros::track::MarkerSkeletonTracker::addNewTracks()
 
 void hiros::track::MarkerSkeletonTracker::removeUnassociatedTracks()
 {
+  unsigned int track_idx;
   int id;
   ros::Duration delta_t;
 
-  for (unsigned int track_idx = 0, idx_to_erase = 0; track_idx < m_tracks.marker_skeletons.size();
-       ++track_idx, ++idx_to_erase) {
+  for (int i = static_cast<int>(m_tracks.marker_skeletons.size()) - 1; i >= 0; --i) {
+    track_idx = static_cast<unsigned int>(i);
+
     if (unassociatedTrack(track_idx)) {
-      id = m_tracks.marker_skeletons.at(idx_to_erase).id;
+      id = m_tracks.marker_skeletons.at(track_idx).id;
       delta_t = m_skeleton_groups_buffer.get_src_time() - m_track_id_to_time_stamp_map.at(id);
 
       if (delta_t > m_params.max_delta_t) {
@@ -357,7 +359,8 @@ void hiros::track::MarkerSkeletonTracker::removeUnassociatedTracks()
 
         m_tracks_to_merge.erase(id);
         m_track_id_to_time_stamp_map.erase(id);
-        m_tracks.marker_skeletons.erase(m_tracks.marker_skeletons.begin() + idx_to_erase--);
+        m_tracks.removeMarkerSkeleton(id);
+        m_avg_tracks.removeMarkerSkeleton(id);
       }
     }
   }
