@@ -136,7 +136,8 @@ void hiros::track::utils::merge(skeletons::types::MarkerSkeleton& t_sk,
 tf2::Vector3
 hiros::track::utils::wavg(const tf2::Vector3& t_v1, const tf2::Vector3& t_v2, const double& t_w1, const double& t_w2)
 {
-  return t_v1.lerp(t_v2, t_w2 / (t_w1 + t_w2));
+  auto weight = (t_w1 + t_w2 != 0.) ? t_w2 / (t_w1 + t_w2) : 0.5;
+  return t_v1.lerp(t_v2, weight);
 }
 
 hiros::skeletons::types::Marker hiros::track::utils::wavg(const skeletons::types::Marker& t_mk1,
@@ -151,7 +152,7 @@ hiros::skeletons::types::Marker hiros::track::utils::wavg(const skeletons::types
   skeletons::types::Marker avg_mk;
 
   avg_mk.id = t_mk1.id;
-  avg_mk.confidence = (t_w1 * t_mk1.confidence + t_w2 * t_mk2.confidence) / (t_w1 + t_w2);
+  avg_mk.confidence = (t_w1 + t_w2 != 0.) ? (t_w1 * t_mk1.confidence + t_w2 * t_mk2.confidence) / (t_w1 + t_w2) : 0.;
   avg_mk.point.position = wavg(t_mk1.point.position, t_mk2.point.position, t_w1, t_w2);
   avg_mk.point.velocity = wavg(t_mk1.point.velocity, t_mk2.point.velocity, t_w1, t_w2);
   avg_mk.point.acceleration = wavg(t_mk1.point.acceleration, t_mk2.point.acceleration, t_w1, t_w2);
@@ -222,7 +223,8 @@ tf2::Quaternion hiros::track::utils::wavg(const tf2::Quaternion& t_q1,
                                           const double& t_w1,
                                           const double& t_w2)
 {
-  return t_q1.normalized().slerp(t_q2.normalized(), t_w2 / (t_w1 + t_w2)).normalize();
+  auto weight = (t_w1 + t_w2 != 0.) ? t_w2 / (t_w1 + t_w2) : 0.5;
+  return t_q1.normalized().slerp(t_q2.normalized(), weight).normalize();
 }
 
 hiros::skeletons::types::Orientation hiros::track::utils::wavg(const skeletons::types::Orientation& t_or1,
@@ -237,7 +239,7 @@ hiros::skeletons::types::Orientation hiros::track::utils::wavg(const skeletons::
   skeletons::types::Orientation avg_or;
 
   avg_or.id = t_or1.id;
-  avg_or.confidence = (t_w1 * t_or1.confidence + t_w2 * t_or2.confidence) / (t_w1 + t_w2);
+  avg_or.confidence = (t_w1 + t_w2 != 0.) ? (t_w1 * t_or1.confidence + t_w2 * t_or2.confidence) / (t_w1 + t_w2) : 0.;
   avg_or.mimu.frame_id = t_or1.mimu.frame_id;
   avg_or.mimu.orientation = wavg(t_or1.mimu.orientation, t_or2.mimu.orientation, t_w1, t_w2);
   avg_or.mimu.angular_velocity = wavg(t_or1.mimu.angular_velocity, t_or2.mimu.angular_velocity, t_w1, t_w2);
