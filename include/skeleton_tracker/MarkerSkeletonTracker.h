@@ -68,7 +68,7 @@ namespace hiros {
       ros::Time getPreviousSourceTime() const;
       void addNewSkeletonGroupToBuffer(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
       void eraseOldSkeletonGroupFromBuffer();
-      void mergeTracks(bool& ready_to_be_published);
+      void mergeTracks();
       void publishTracks(const hiros::skeletons::types::MarkerSkeletonGroup& t_tracks) const;
 
       void fillDetections();
@@ -115,7 +115,7 @@ namespace hiros {
       ros::Publisher m_out_msg_pub;
 
       // vector<pair<src_frame, frame_id>>
-      std::vector<std::pair<std::string, std::string>> m_received_frames;
+      std::map<std::string, std::string> m_received_frames;
 
       MarkerSkeletonGroupsBuffer m_skeleton_groups_buffer;
 
@@ -131,6 +131,8 @@ namespace hiros {
       std::vector<std::pair<ros::Time, std::string>> m_frames_to_merge;
       // map<track_id, vector<skeleton_tracks>>
       std::map<int, std::vector<skeletons::types::MarkerSkeleton>> m_tracks_to_merge;
+
+      bool m_ok_to_publish;
 
       skeletons::types::MarkerSkeletonGroup m_detections{};
       skeletons::types::MarkerSkeletonGroup m_tracks{};

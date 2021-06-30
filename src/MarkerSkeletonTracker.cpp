@@ -14,6 +14,7 @@ hiros::track::MarkerSkeletonTracker::MarkerSkeletonTracker()
   : m_nh("~")
   , m_node_namespace(m_nh.getNamespace())
   , m_last_track_id(-1)
+  , m_ok_to_publish(false)
   , m_configured(false)
 {}
 
@@ -64,6 +65,8 @@ void hiros::track::MarkerSkeletonTracker::configure()
     ros::shutdown();
   }
 
+  setupRosTopics();
+
   m_configured = true;
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...CONFIGURED" << BASH_MSG_RESET);
 }
@@ -75,8 +78,6 @@ void hiros::track::MarkerSkeletonTracker::start()
   if (!m_configured) {
     configure();
   }
-
-  setupRosTopics();
 
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...RUNNING" << BASH_MSG_RESET);
 }
@@ -116,26 +117,15 @@ void hiros::track::MarkerSkeletonTracker::checkFrameIdConsistency(
   hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg)
 {
   if (m_received_frames.size() < m_n_detectors) {
-    auto src_frame = t_skeleton_group_msg->src_frame;
+    m_received_frames[t_skeleton_group_msg->src_frame] = t_skeleton_group_msg->header.frame_id;
+    m_frame_id = t_skeleton_group_msg->header.frame_id;
 
-    if (std::find_if(m_received_frames.begin(),
-                     m_received_frames.end(),
-                     [&src_frame](const auto& elem) { return elem.second == src_frame; })
-        == m_received_frames.end()) {
-      m_received_frames.push_back(
-        std::make_pair(t_skeleton_group_msg->src_frame, t_skeleton_group_msg->header.frame_id));
-    }
-
-    if (m_received_frames.size() == m_n_detectors) {
-      m_frame_id = m_received_frames.front().second;
-
-      for (const auto& frame_pair : m_received_frames) {
-        if (frame_pair.second != m_frame_id) {
-          ROS_FATAL_STREAM("Error. Data must be expressed w.r.t the same reference frame");
-          ros::shutdown();
-          exit(EXIT_FAILURE);
-        }
-      }
+    if (std::find_if(
+          m_received_frames.begin(), m_received_frames.end(), [&](const auto& e) { return e.second != m_frame_id; })
+        != m_received_frames.end()) {
+      ROS_FATAL_STREAM("Error. Data must be expressed w.r.t the same reference frame");
+      ros::shutdown();
+      exit(EXIT_FAILURE);
     }
   }
 }
@@ -156,13 +146,11 @@ void hiros::track::MarkerSkeletonTracker::detectorCallback(
     publishTracks(m_tracks);
   }
   else {
-    bool ready_to_publish = false;
-
     while ((t_skeleton_group_msg->src_time - m_skeleton_groups_buffer.get_src_time()).toSec() >= m_params.fixed_delay
            && !m_skeleton_groups_buffer.empty()) {
       trackOldestFrame();
-      mergeTracks(ready_to_publish);
-      if (ready_to_publish) {
+      mergeTracks();
+      if (m_ok_to_publish) {
         publishTracks(m_avg_tracks);
       }
     }
@@ -207,10 +195,9 @@ void hiros::track::MarkerSkeletonTracker::eraseOldSkeletonGroupFromBuffer()
   m_skeleton_groups_buffer.pop_back();
 }
 
-void hiros::track::MarkerSkeletonTracker::mergeTracks(bool& t_ready_to_be_published)
+void hiros::track::MarkerSkeletonTracker::mergeTracks()
 {
-  t_ready_to_be_published = false;
-
+  m_ok_to_publish = false;
   auto last_src_frame = m_tracks.src_frame;
 
   if (std::find_if(
@@ -230,7 +217,7 @@ void hiros::track::MarkerSkeletonTracker::mergeTracks(bool& t_ready_to_be_publis
     m_frames_to_merge.clear();
     m_tracks_to_merge.clear();
 
-    t_ready_to_be_published = true;
+    m_ok_to_publish = true;
   }
 
   m_frames_to_merge.push_back(std::make_pair(ros::Time(m_tracks.src_time), m_tracks.src_frame));
@@ -245,7 +232,7 @@ void hiros::track::MarkerSkeletonTracker::mergeTracks(bool& t_ready_to_be_publis
     m_frames_to_merge.clear();
     m_tracks_to_merge.clear();
 
-    t_ready_to_be_published = true;
+    m_ok_to_publish = true;
   }
 }
 
