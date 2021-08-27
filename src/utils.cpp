@@ -90,6 +90,13 @@ void hiros::track::utils::minWithIndex(const cv::Mat_<double>& t_mat,
   }
 }
 
+bool hiros::track::utils::matchMunkres(const cv::Mat_<int>& t_munkres_matrix,
+                                       const unsigned int& t_row,
+                                       const unsigned int& t_col)
+{
+  return (t_munkres_matrix[static_cast<int>(t_row)][static_cast<int>(t_col)] == 1);
+}
+
 bool hiros::track::utils::isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton)
 {
   return skeletons::utils::numberOfMarkers(t_skeleton) + skeletons::utils::numberOfOrientations(t_skeleton) == 0;

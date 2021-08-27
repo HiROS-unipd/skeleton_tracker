@@ -19,6 +19,8 @@ namespace hiros {
       void replaceNans(cv::Mat_<double>& t_mat);
       void minWithIndex(const cv::Mat_<double>& t_mat, double& t_min, unsigned int& t_row, unsigned int& t_col);
 
+      bool matchMunkres(const cv::Mat_<int>& t_munkres_matrix, const unsigned int& t_row, const unsigned int& t_col);
+
       bool isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton);
       bool isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleton);
 

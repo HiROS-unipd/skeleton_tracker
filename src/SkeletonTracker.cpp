@@ -595,7 +595,7 @@ hiros::track::SkeletonTracker::computeAcceleration(const hiros::skeletons::types
 
 void hiros::track::SkeletonTracker::updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx)
 {
-  if (m_munkres.match(t_track_idx, t_det_idx)) {
+  if (utils::matchMunkres(m_munkres_matrix, t_track_idx, t_det_idx)) {
     int id = m_tracks.skeletons.at(t_track_idx).id;
 
     if (m_n_detectors == 1 && !m_params.filter_trajectories) {
