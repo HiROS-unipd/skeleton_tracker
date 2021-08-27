@@ -47,29 +47,6 @@ double hiros::track::utils::max(const cv::Mat_<double>& t_mat)
   return max;
 }
 
-void hiros::track::utils::replaceNansWithMax(cv::Mat_<double>& t_mat)
-{
-  double max_val = max(t_mat);
-
-  for (int r = 0; r < t_mat.rows; ++r) {
-    for (int c = 0; c < t_mat.cols; ++c) {
-      if (std::isnan(t_mat(r, c))) {
-        t_mat(r, c) = max_val;
-      }
-    }
-  }
-}
-
-void hiros::track::utils::replaceNans(cv::Mat_<double>& t_mat)
-{
-  if (isNaN(t_mat)) {
-    t_mat.setTo(std::numeric_limits<double>::max());
-  }
-  else {
-    utils::replaceNansWithMax(t_mat);
-  }
-}
-
 void hiros::track::utils::minWithIndex(const cv::Mat_<double>& t_mat,
                                        double& t_min,
                                        unsigned int& t_row,
@@ -97,6 +74,25 @@ bool hiros::track::utils::matchMunkres(const cv::Mat_<int>& t_munkres_matrix,
   return (t_munkres_matrix[static_cast<int>(t_row)][static_cast<int>(t_col)] == 1);
 }
 
+int hiros::track::utils::getSkeletonIndexFromId(const std::vector<StampedSkeleton>& t_vec, const int& t_id)
+{
+  for (unsigned int i = 0; i < t_vec.size(); ++i) {
+    if (t_vec.at(i).skeleton.id == t_id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+std::shared_ptr<hiros::track::utils::StampedSkeleton>
+hiros::track::utils::getSkeletonFromId(const std::vector<StampedSkeleton>& t_vec, const int& t_id)
+{
+  auto it =
+    std::find_if(t_vec.begin(), t_vec.end(), [&](const StampedSkeleton& elem) { return elem.skeleton.id == t_id; });
+
+  return it != t_vec.end() ? std::make_shared<StampedSkeleton>(*it) : nullptr;
+}
+
 bool hiros::track::utils::isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton)
 {
   return skeletons::utils::numberOfMarkers(t_skeleton) + skeletons::utils::numberOfOrientations(t_skeleton) == 0;
@@ -117,6 +113,15 @@ bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleto
   }
 
   return true;
+}
+
+void hiros::track::utils::merge(StampedSkeleton& t_s1,
+                                const StampedSkeleton& t_s2,
+                                const double& t_w1,
+                                const double& t_w2,
+                                const bool& t_weight_by_confidence)
+{
+  merge(t_s1.skeleton, t_s2.skeleton, t_w1, t_w2, t_weight_by_confidence);
 }
 
 void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1,
@@ -197,6 +202,7 @@ hiros::skeletons::types::Marker hiros::track::utils::wavg(const skeletons::types
                                                           const double& t_w2)
 {
   if (t_mk1.id != t_mk2.id) {
+    std::cerr << "Warning: trying to average different markers" << std::endl;
     return skeletons::types::Marker();
   }
 
@@ -226,6 +232,7 @@ hiros::skeletons::types::Orientation hiros::track::utils::wavg(const skeletons::
                                                                const double& t_w2)
 {
   if (t_or1.id != t_or2.id) {
+    std::cerr << "Warning: trying to average different orientations" << std::endl;
     return skeletons::types::Orientation();
   }
 

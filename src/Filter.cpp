@@ -24,20 +24,43 @@ void hiros::track::StateSpaceFilter3::filter(hiros::skeletons::types::Point& t_p
 hiros::track::Filter::Filter(hiros::skeletons::types::Skeleton& t_skeleton,
                              const double& t_time,
                              const double& t_cutoff)
-  : m_cutoff(t_cutoff)
 {
-  for (auto& mkg : t_skeleton.marker_groups) {
-    for (auto& mk : mkg.markers) {
-      m_filters[mkg.id][mk.id] = StateSpaceFilter3();
-      m_filters[mkg.id][mk.id].filter(mk.point, t_time, m_cutoff);
+  init(t_skeleton, t_time, t_cutoff);
+}
+
+void hiros::track::Filter::init(hiros::skeletons::types::Skeleton& t_skeleton,
+                                const double& t_time,
+                                const double& t_cutoff)
+{
+  if (!m_initialized) {
+    for (auto& mkg : t_skeleton.marker_groups) {
+      for (auto& mk : mkg.markers) {
+        m_filters[mkg.id][mk.id] = StateSpaceFilter3();
+        m_filters[mkg.id][mk.id].filter(mk.point, t_time, t_cutoff);
+      }
     }
+    m_cutoff = t_cutoff;
+    m_initialized = true;
   }
 }
 
-hiros::track::Filter::~Filter() {}
-
-void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time)
+hiros::track::Filter::Filter(utils::StampedSkeleton& t_skeleton, const double& t_cutoff)
 {
+  Filter(t_skeleton.skeleton, t_skeleton.src_time.toSec(), t_cutoff);
+}
+
+void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton,
+                                  const double& t_time,
+                                  const double& t_cutoff)
+{
+  if (!m_initialized) {
+    if (std::isnan(t_cutoff)) {
+      std::cerr << "hiros::track::Filter Warning: cutoff = NaN" << std::endl;
+      return;
+    }
+    init(t_skeleton, t_time, t_cutoff);
+  }
+
   for (const auto& mkg : m_filters) {
     auto mkg_id = mkg.first;
 
@@ -73,4 +96,9 @@ void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton,
       m_filters[mkg.id][mk.id].filter(mk.point, t_time, m_cutoff);
     }
   }
+}
+
+void hiros::track::Filter::filter(utils::StampedSkeleton& t_skeleton, const double& t_cutoff)
+{
+  filter(t_skeleton.skeleton, t_skeleton.src_time.toSec(), t_cutoff);
 }

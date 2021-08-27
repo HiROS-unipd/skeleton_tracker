@@ -12,18 +12,39 @@ namespace hiros {
   namespace track {
     namespace utils {
 
+      struct StampedSkeleton
+      {
+        StampedSkeleton(const hiros::skeletons::types::Skeleton t_skeleton = {},
+                        const ros::Time& t_src_time = {},
+                        const std::string& t_src_frame = {})
+          : skeleton(t_skeleton)
+          , src_time(t_src_time)
+          , src_frame(t_src_frame)
+        {}
+
+        hiros::skeletons::types::Skeleton skeleton;
+        ros::Time src_time;
+        std::string src_frame;
+      };
+
       bool isNaN(const cv::Mat_<double>& t_mat);
       double min(const cv::Mat_<double>& t_mat);
       double max(const cv::Mat_<double>& t_mat);
-      void replaceNansWithMax(cv::Mat_<double>& t_mat);
-      void replaceNans(cv::Mat_<double>& t_mat);
       void minWithIndex(const cv::Mat_<double>& t_mat, double& t_min, unsigned int& t_row, unsigned int& t_col);
 
       bool matchMunkres(const cv::Mat_<int>& t_munkres_matrix, const unsigned int& t_row, const unsigned int& t_col);
 
+      int getSkeletonIndexFromId(const std::vector<StampedSkeleton>& t_vec, const int& t_id);
+      std::shared_ptr<StampedSkeleton> getSkeletonFromId(const std::vector<StampedSkeleton>& t_vec, const int& t_id);
+
       bool isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton);
       bool isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleton);
 
+      void merge(StampedSkeleton& t_s1,
+                 const StampedSkeleton& t_s2,
+                 const double& t_w1 = 1,
+                 const double& t_w2 = 1,
+                 const bool& t_weight_by_confidence = false);
       void merge(hiros::skeletons::types::Skeleton& t_s1,
                  const hiros::skeletons::types::Skeleton& t_s2,
                  const double& t_w1 = 1,

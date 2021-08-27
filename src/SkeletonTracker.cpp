@@ -39,8 +39,14 @@ void hiros::track::SkeletonTracker::configure()
   }
 
   m_n_detectors = m_params.in_skeleton_group_topics.size();
-  double max_delta_t = 0;
-  m_nh.getParam("fixed_delay", m_params.fixed_delay);
+  double max_delta_t = 0, fixed_delay = 0;
+
+  m_nh.getParam("camera_frequency", m_params.camera_frequency);
+  if (m_params.camera_frequency <= 0) {
+    m_params.camera_frequency = std::numeric_limits<double>::min();
+  }
+  m_nh.getParam("fixed_delay", fixed_delay);
+  m_params.fixed_delay = ros::Duration(fixed_delay);
   m_nh.getParam("min_joints", m_params.min_joints);
   m_nh.getParam("min_markers_distance", m_params.min_markers_distance);
   if (m_params.min_markers_distance <= 0) {
@@ -132,6 +138,23 @@ void hiros::track::SkeletonTracker::setupRosTopics()
   m_out_msg_pub = m_nh.advertise<hiros_skeleton_msgs::SkeletonGroup>(m_params.out_msg_topic_name, 1);
 }
 
+void hiros::track::SkeletonTracker::detectorCallback(hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
+{
+  checkFrameIdConsistency(t_skeleton_group_msg);
+
+  if (t_skeleton_group_msg->src_time <= getPreviousSrcTime()) {
+    return;
+  }
+
+  addNewSkeletonGroupToBuffer(t_skeleton_group_msg);
+
+  while (!m_skeleton_groups_buffer.empty()
+         && (t_skeleton_group_msg->src_time - m_skeleton_groups_buffer.get_src_time()) >= m_params.fixed_delay) {
+    trackOldestFrame();
+    mergeTracks();
+  }
+}
+
 void hiros::track::SkeletonTracker::checkFrameIdConsistency(
   hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
 {
@@ -149,37 +172,14 @@ void hiros::track::SkeletonTracker::checkFrameIdConsistency(
   }
 }
 
-void hiros::track::SkeletonTracker::detectorCallback(hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
+void hiros::track::SkeletonTracker::addNewSkeletonGroupToBuffer(
+  hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
 {
-  checkFrameIdConsistency(t_skeleton_group_msg);
-
-  if (t_skeleton_group_msg->src_time <= getPreviousSourceTime()) {
-    return;
-  }
-
-  addNewSkeletonGroupToBuffer(t_skeleton_group_msg);
-
-  if (m_n_detectors == 1) {
-    trackOldestFrame();
-    publishTracks(m_tracks);
-  }
-  else {
-    while ((t_skeleton_group_msg->src_time - m_skeleton_groups_buffer.get_src_time()).toSec() >= m_params.fixed_delay
-           && !m_skeleton_groups_buffer.empty()) {
-      trackOldestFrame();
-      mergeTracks();
-      if (m_ok_to_publish) {
-        publishTracks(m_avg_tracks);
-      }
-    }
-  }
+  m_skeleton_groups_buffer.push_back(t_skeleton_group_msg);
 }
 
 void hiros::track::SkeletonTracker::trackOldestFrame()
 {
-  m_tracks.src_time = m_skeleton_groups_buffer.get_src_time().toSec();
-  m_tracks.src_frame = m_skeleton_groups_buffer.get_src_frame();
-
   fillDetections();
   createCostMatrix();
   solveMunkres();
@@ -187,128 +187,157 @@ void hiros::track::SkeletonTracker::trackOldestFrame()
   updateDetectedTracks();
   addNewTracks();
   removeUnassociatedTracks();
-  eraseOldSkeletonGroupFromBuffer();
-}
-
-ros::Time hiros::track::SkeletonTracker::getPreviousSourceTime() const
-{
-  return !m_track_id_to_time_stamp_map.empty()
-           ? (std::max_element(m_track_id_to_time_stamp_map.begin(),
-                               m_track_id_to_time_stamp_map.end(),
-                               [](const std::pair<int, ros::Time>& t1, const std::pair<int, ros::Time>& t2) {
-                                 return t1.second < t2.second;
-                               }))
-               ->second
-           : ros::Time();
-}
-
-void hiros::track::SkeletonTracker::addNewSkeletonGroupToBuffer(
-  hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg)
-{
-  m_skeleton_groups_buffer.push_back(t_skeleton_group_msg);
-}
-
-void hiros::track::SkeletonTracker::eraseOldSkeletonGroupFromBuffer()
-{
-  m_skeleton_groups_buffer.pop_back();
 }
 
 void hiros::track::SkeletonTracker::mergeTracks()
 {
-  m_ok_to_publish = false;
-  auto last_src_frame = m_tracks.src_frame;
+  for (auto& pair : m_tracks_to_merge) {
+    auto last_track = utils::getSkeletonFromId(m_tracks, pair.first);
+    auto last_src_frame = last_track->src_frame;
+    auto last_src_time = last_track->src_time;
 
-  if (std::find_if(
-        m_frames_to_merge.begin(),
-        m_frames_to_merge.end(),
-        [&last_src_frame](const std::pair<ros::Time, std::string>& elem) { return elem.second == last_src_frame; })
-      != m_frames_to_merge.end()) {
-    // Add previous tracks to the computation of the average tracks when some frames are missing
-    for (unsigned long i = m_frames_to_merge.size(); i < m_n_detectors; ++i) {
-      for (const auto& track : m_avg_tracks.skeletons) {
-        m_tracks_to_merge[track.id].push_back(track);
+    // If one of the tracks to merge has its src_frame equal to the one of the latest received track, and its src_time
+    // is lower than the one of the latest received track, then the current track belongs to a new frame, and it is time
+    // to compute the average track
+    if (std::find_if(
+          pair.second.begin(),
+          pair.second.end(),
+          [&](const auto& elem) { return (elem.src_frame == last_src_frame && elem.src_time < last_src_time); })
+        != pair.second.end()) {
+      computeAvgTrack(pair.first);
+
+      if (m_ok_to_publish) {
+        publishTracks();
+      }
+    }
+  }
+
+  for (auto& track : m_tracks) {
+    auto id = track.skeleton.id;
+
+    // If the delta between the src_time of the latest received track and the oldest track to merge is greater than half
+    // of the camera's dt between frames (multiplied by 1.1 to take into account possible fluctuations of the camera's
+    // frequency), then the track belongs to a new frame, and it is time to compute the average track
+    if (!m_tracks_to_merge[id].empty()
+        && (track.src_time - m_tracks_to_merge[id].front().src_time).toSec() > 1.1 / m_params.camera_frequency / 2.) {
+      computeAvgTrack(id);
+
+      if (m_ok_to_publish) {
+        publishTracks();
       }
     }
 
-    computeAvgTracks();
+    m_tracks_to_merge[id].push_back(track);
 
-    m_frames_to_merge.clear();
-    m_tracks_to_merge.clear();
+    // If the number of tracks to merge is equal to the number of detectors, then the next track will necessarily belong
+    // to a new frame, and we can compute the current frame's average track withouth having to wait for the next frame
+    if (m_tracks_to_merge.at(id).size() == m_n_detectors) {
+      computeAvgTrack(id);
 
-    m_ok_to_publish = true;
-  }
-
-  m_frames_to_merge.push_back(std::make_pair(ros::Time(m_tracks.src_time), m_tracks.src_frame));
-
-  for (const auto& skeleton : m_tracks.skeletons) {
-    m_tracks_to_merge[skeleton.id].push_back(skeleton);
-  }
-
-  if (m_frames_to_merge.size() == m_n_detectors) {
-    computeAvgTracks();
-
-    m_frames_to_merge.clear();
-    m_tracks_to_merge.clear();
-
-    m_ok_to_publish = true;
+      if (m_ok_to_publish) {
+        publishTracks();
+      }
+    }
   }
 }
 
-void hiros::track::SkeletonTracker::publishTracks(const hiros::skeletons::types::SkeletonGroup& t_tracks) const
+ros::Time hiros::track::SkeletonTracker::getPreviousSrcTime() const
 {
-  m_out_msg_pub.publish(
-    skeletons::utils::toMsg(ros::Time::now(), m_frame_id, ros::Time(t_tracks.src_time), t_tracks.src_frame, t_tracks));
+  // Return the source time of the latest avelable tracks
+  return !m_tracks.empty()
+           ? (std::max_element(m_tracks.begin(),
+                               m_tracks.end(),
+                               [](const auto& t1, const auto& t2) { return t1.src_time < t2.src_time; }))
+               ->src_time
+           : ros::Time();
+}
+
+ros::Time hiros::track::SkeletonTracker::getCurrentSrcTime() const
+{
+  // If m_detections is already filled, then the current src_time is the max among the detections' src_times
+  if (!m_detections.empty()) {
+    return (std::max_element(m_detections.begin(),
+                             m_detections.end(),
+                             [](const auto& t1, const auto& t2) { return t1.src_time < t2.src_time; }))
+      ->src_time;
+  }
+  // Else, if the skeleton_group buffer is not empty, the current src_time is the one from the oldest frame in the
+  // buffer
+  else if (!m_skeleton_groups_buffer.empty()) {
+    return m_skeleton_groups_buffer.get_src_time();
+  }
+
+  return ros::Time();
+}
+
+void hiros::track::SkeletonTracker::publishTracks()
+{
+  std::sort(m_avg_tracks.begin(), m_avg_tracks.end(), [](const auto& lhs, const auto& rhs) {
+    return lhs.skeleton.id < rhs.skeleton.id;
+  });
+
+  m_out_msg_pub.publish(skeletons::utils::toMsg(
+    ros::Time::now(), m_frame_id, ros::Time(computeAvgSrcTime(m_avg_tracks)), "", toSkeletonGroup(m_avg_tracks)));
+
+  m_ok_to_publish = false;
+  m_avg_tracks.clear();
+}
+
+hiros::skeletons::types::SkeletonGroup
+hiros::track::SkeletonTracker::toSkeletonGroup(const std::vector<utils::StampedSkeleton>& t_skel_vector) const
+{
+  hiros::skeletons::types::SkeletonGroup msg;
+  for (const auto& skel : t_skel_vector) {
+    msg.addSkeleton(skel.skeleton);
+  }
+
+  return msg;
 }
 
 void hiros::track::SkeletonTracker::fillDetections()
 {
-  m_detections.skeletons.clear();
+  m_detections.clear();
 
-  m_detections.src_time = m_skeleton_groups_buffer.get_src_time().toSec();
-  m_detections.src_frame = m_skeleton_groups_buffer.get_src_frame();
   for (const auto& skeleton : m_skeleton_groups_buffer.get_skeleton_group()->skeletons) {
     if (!utils::isEmpty(skeleton)) {
-      m_detections.addSkeleton(hiros::skeletons::utils::toStruct(skeleton));
+      m_detections.emplace_back(hiros::skeletons::utils::toStruct(skeleton),
+                                m_skeleton_groups_buffer.get_src_time(),
+                                m_skeleton_groups_buffer.get_src_frame());
     }
   }
+
+  eraseOldSkeletonGroupFromBuffer();
 }
 
 void hiros::track::SkeletonTracker::createCostMatrix()
 {
-  if (m_tracks.skeletons.empty() || m_detections.skeletons.empty()) {
+  if (m_tracks.empty() || m_detections.empty()) {
     m_cost_matrix = cv::Mat_<double>();
     m_markers_distance_matrix = cv::Mat_<double>();
     m_orientations_distance_matrix = cv::Mat_<double>();
     return;
   }
 
-  auto tracks_ptr = m_avg_tracks.skeletons.empty()
-                      ? std::make_unique<hiros::skeletons::types::SkeletonGroup>(m_tracks)
-                      : std::make_unique<hiros::skeletons::types::SkeletonGroup>(m_avg_tracks);
+  auto tracks = getLatestAvailableTracks();
 
-  m_cost_matrix =
-    cv::Mat_<double>(static_cast<int>(tracks_ptr->skeletons.size()), static_cast<int>(m_detections.skeletons.size()));
-  m_markers_distance_matrix =
-    cv::Mat_<double>(static_cast<int>(tracks_ptr->skeletons.size()), static_cast<int>(m_detections.skeletons.size()));
+  m_cost_matrix = cv::Mat_<double>(static_cast<int>(tracks.size()), static_cast<int>(m_detections.size()));
+  m_markers_distance_matrix = cv::Mat_<double>(static_cast<int>(tracks.size()), static_cast<int>(m_detections.size()));
   m_orientations_distance_matrix =
-    cv::Mat_<double>(static_cast<int>(tracks_ptr->skeletons.size()), static_cast<int>(m_detections.skeletons.size()));
+    cv::Mat_<double>(static_cast<int>(tracks.size()), static_cast<int>(m_detections.size()));
 
   for (int track_idx = 0; track_idx < m_cost_matrix.rows; ++track_idx) {
     for (int det_idx = 0; det_idx < m_cost_matrix.cols; ++det_idx) {
-
       m_markers_distance_matrix(track_idx, det_idx) =
-        computeMarkersDistance(tracks_ptr->skeletons.at(static_cast<unsigned int>(track_idx)),
-                               m_detections.skeletons.at(static_cast<unsigned int>(det_idx)));
+        computeMarkersDistance(tracks.at(static_cast<unsigned int>(track_idx)).skeleton,
+                               m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
       m_orientations_distance_matrix(track_idx, det_idx) =
-        computeOrientationsDistance(tracks_ptr->skeletons.at(static_cast<unsigned int>(track_idx)),
-                                    m_detections.skeletons.at(static_cast<unsigned int>(det_idx)));
+        computeOrientationsDistance(tracks.at(static_cast<unsigned int>(track_idx)).skeleton,
+                                    m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
       m_cost_matrix(track_idx, det_idx) =
-        computeWeightedDistance(tracks_ptr->skeletons.at(static_cast<unsigned int>(track_idx)),
-                                m_detections.skeletons.at(static_cast<unsigned int>(det_idx)));
+        computeWeightedDistance(tracks.at(static_cast<unsigned int>(track_idx)).skeleton,
+                                m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
     }
   }
-
-  utils::replaceNans(m_cost_matrix);
 }
 
 void hiros::track::SkeletonTracker::solveMunkres()
@@ -332,8 +361,8 @@ void hiros::track::SkeletonTracker::removeDistantMatches()
 
 void hiros::track::SkeletonTracker::updateDetectedTracks()
 {
-  for (unsigned int track_idx = 0; track_idx < m_tracks.skeletons.size(); ++track_idx) {
-    for (unsigned int det_idx = 0; det_idx < m_detections.skeletons.size(); ++det_idx) {
+  for (unsigned int track_idx = 0; track_idx < m_tracks.size(); ++track_idx) {
+    for (unsigned int det_idx = 0; det_idx < m_detections.size(); ++det_idx) {
       updateDetectedTrack(track_idx, det_idx);
     }
   }
@@ -341,19 +370,18 @@ void hiros::track::SkeletonTracker::updateDetectedTracks()
 
 void hiros::track::SkeletonTracker::addNewTracks()
 {
-  if (m_detections.skeletons.empty()) {
+  if (m_detections.empty()) {
     return;
   }
 
   if (m_cost_matrix.empty()) {
-    for (const auto& detection : m_detections.skeletons) {
+    for (const auto& detection : m_detections) {
       addNewTrack(detection);
     }
   }
   else {
     for (unsigned int c = 0; c < static_cast<unsigned int>(m_munkres_matrix.cols); ++c) {
       if (unassociatedDetection(c)) {
-
         double min;
         unsigned int row, col;
         utils::minWithIndex(m_cost_matrix.col(static_cast<int>(c)), min, row, col);
@@ -363,10 +391,10 @@ void hiros::track::SkeletonTracker::addNewTracks()
         if (utils::min(m_markers_distance_matrix.col(static_cast<int>(c))) < m_params.min_markers_distance
             && utils::min(m_orientations_distance_matrix.col(static_cast<int>(c)))
                  < m_params.min_orientations_distance) {
-          utils::merge(m_tracks.skeletons.at(row), m_detections.skeletons.at(c));
+          utils::merge(m_tracks.at(row), m_detections.at(c));
         }
         else {
-          addNewTrack(m_detections.skeletons.at(c));
+          addNewTrack(m_detections.at(c));
         }
       }
     }
@@ -379,25 +407,60 @@ void hiros::track::SkeletonTracker::removeUnassociatedTracks()
   int id;
   ros::Duration delta_t;
 
-  for (int i = static_cast<int>(m_tracks.skeletons.size()) - 1; i >= 0; --i) {
+  for (int i = static_cast<int>(m_tracks.size()) - 1; i >= 0; --i) {
     track_idx = static_cast<unsigned int>(i);
 
     if (unassociatedTrack(track_idx)) {
-      id = m_tracks.skeletons.at(track_idx).id;
-      delta_t = m_skeleton_groups_buffer.get_src_time() - m_track_id_to_time_stamp_map.at(id);
+      id = m_tracks.at(track_idx).skeleton.id;
+      delta_t = getCurrentSrcTime() - m_tracks.at(track_idx).src_time;
 
       if (delta_t > m_params.max_delta_t) {
-        if (m_n_detectors == 1 && m_params.filter_trajectories) {
-          m_track_id_to_filter_map.erase(id);
-        }
-
         m_tracks_to_merge.erase(id);
-        m_track_id_to_time_stamp_map.erase(id);
-        m_tracks.removeSkeleton(id);
-        m_avg_tracks.removeSkeleton(id);
+        m_tracks.erase(std::remove_if(m_tracks.begin(),
+                                      m_tracks.end(),
+                                      [&](const auto& track) { return (track.skeleton.id == id); }),
+                       m_tracks.end());
+        m_avg_tracks.erase(std::remove_if(m_avg_tracks.begin(),
+                                          m_avg_tracks.end(),
+                                          [&](const auto& avg_track) { return (avg_track.skeleton.id == id); }),
+                           m_avg_tracks.end());
+        m_track_filters.erase(id);
       }
     }
   }
+}
+
+void hiros::track::SkeletonTracker::eraseOldSkeletonGroupFromBuffer()
+{
+  m_skeleton_groups_buffer.pop_back();
+}
+
+std::vector<hiros::track::utils::StampedSkeleton> hiros::track::SkeletonTracker::getLatestAvailableTracks() const
+{
+  if (m_avg_tracks.size() > m_tracks.size()) {
+    ROS_FATAL_STREAM("Error: avg_tracks size > tracks size. This should not happen. Shutting down");
+    ros::shutdown();
+  }
+  // If the avg_tracks' size is equal to the tracks' size, then I have already computed an avg_track for each track,
+  // and can directly return the avg_tracks
+  else if (m_avg_tracks.size() == m_tracks.size()) {
+    return m_avg_tracks;
+  }
+  // If the avg_tracks are empty, then I only have the raw tracks
+  else if (m_avg_tracks.empty()) {
+    return m_tracks;
+  }
+
+  // If I have both, and the avg_tracks' size is lower the the tracks' size, then I take the available
+  // avg_tracks and fill the missing ones with the raw tracks
+  auto ret_tracks = m_tracks;
+  for (const auto& avg_track : m_avg_tracks) {
+    auto track_ptr = utils::getSkeletonFromId(ret_tracks, avg_track.skeleton.id);
+    if (track_ptr != nullptr) {
+      *track_ptr = avg_track;
+    }
+  }
+  return ret_tracks;
 }
 
 double hiros::track::SkeletonTracker::computeMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
@@ -464,9 +527,10 @@ hiros::track::SkeletonTracker::computeWeightedMarkersDistance(const hiros::skele
   double weight;
 
   if (m_params.use_marker_velocities || m_params.weight_distances_by_velocities) {
-    computeVelocities(t_track,
-                      t_detection,
-                      (m_skeleton_groups_buffer.get_src_time() - m_track_id_to_time_stamp_map.at(t_track.id)).toSec());
+    computeVelocities(
+      t_track,
+      t_detection,
+      (m_skeleton_groups_buffer.get_src_time() - utils::getSkeletonFromId(m_tracks, t_track.id)->src_time).toSec());
   }
 
   for (const auto& det_mkg : t_detection.marker_groups) {
@@ -580,12 +644,12 @@ double hiros::track::SkeletonTracker::computeWeightedDistance(const hiros::skele
          + computeWeightedOrientationsDistance(t_track, t_detection);
 }
 
-void hiros::track::SkeletonTracker::initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton) const
+void hiros::track::SkeletonTracker::initializeVelAndAcc(utils::StampedSkeleton& t_skeleton) const
 {
-  for (auto& mkg : t_skeleton.marker_groups) {
+  for (auto& mkg : t_skeleton.skeleton.marker_groups) {
     for (auto& mk : mkg.markers) {
-      mk.point.velocity = hiros::skeletons::types::Velocity();
-      mk.point.acceleration = hiros::skeletons::types::Acceleration();
+      mk.point.velocity = hiros::skeletons::types::Velocity(0, 0, 0);
+      mk.point.acceleration = hiros::skeletons::types::Acceleration(0, 0, 0);
     }
   }
 }
@@ -648,42 +712,20 @@ hiros::track::SkeletonTracker::computeAcceleration(const hiros::skeletons::types
 void hiros::track::SkeletonTracker::updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx)
 {
   if (utils::matchMunkres(m_munkres_matrix, t_track_idx, t_det_idx)) {
-    int id = m_tracks.skeletons.at(t_track_idx).id;
-
-    if (m_n_detectors == 1 && !m_params.filter_trajectories) {
-      computeVelAndAcc(m_tracks.skeletons.at(t_track_idx),
-                       m_detections.skeletons.at(t_det_idx),
-                       (m_skeleton_groups_buffer.get_src_time() - m_track_id_to_time_stamp_map.at(id)).toSec());
-    }
-
-    m_track_id_to_time_stamp_map.at(id) = m_skeleton_groups_buffer.get_src_time();
-
-    m_tracks.skeletons.at(t_track_idx) = m_detections.skeletons.at(t_det_idx);
-    m_tracks.skeletons.at(t_track_idx).id = id;
-
-    if (m_n_detectors == 1 && m_params.filter_trajectories) {
-      m_track_id_to_filter_map.at(id).filter(m_tracks.skeletons.at(t_track_idx),
-                                             m_track_id_to_time_stamp_map.at(id).toSec());
-    }
+    int id = m_tracks.at(t_track_idx).skeleton.id;
+    m_tracks.at(t_track_idx) = m_detections.at(t_det_idx);
+    m_tracks.at(t_track_idx).skeleton.id = id;
   }
 }
 
-void hiros::track::SkeletonTracker::addNewTrack(const hiros::skeletons::types::Skeleton& t_detection)
+void hiros::track::SkeletonTracker::addNewTrack(const utils::StampedSkeleton& t_detection)
 {
-  if (skeletons::utils::numberOfMarkers(t_detection) >= static_cast<unsigned int>(m_params.min_joints)
-      || skeletons::utils::numberOfOrientations(t_detection) >= static_cast<unsigned int>(m_params.min_joints)) {
-    m_tracks.addSkeleton(t_detection);
-    m_tracks.skeletons.back().id = ++m_last_track_id;
-    initializeVelAndAcc(m_tracks.skeletons.back());
-
-    m_track_id_to_time_stamp_map.emplace(m_last_track_id, m_skeleton_groups_buffer.get_src_time());
-
-    if (m_n_detectors == 1 && m_params.filter_trajectories) {
-      m_track_id_to_filter_map.emplace(m_tracks.skeletons.back().id,
-                                       hiros::track::Filter(m_tracks.skeletons.back(),
-                                                            m_track_id_to_time_stamp_map.at(m_last_track_id).toSec(),
-                                                            m_params.filter_cutoff_frequency));
-    }
+  if (skeletons::utils::numberOfMarkers(t_detection.skeleton) >= static_cast<unsigned int>(m_params.min_joints)
+      || skeletons::utils::numberOfOrientations(t_detection.skeleton)
+           >= static_cast<unsigned int>(m_params.min_joints)) {
+    m_tracks.push_back(t_detection);
+    m_tracks.back().skeleton.id = ++m_last_track_id;
+    initializeVelAndAcc(m_tracks.back());
   }
 }
 
@@ -697,66 +739,72 @@ bool hiros::track::SkeletonTracker::unassociatedTrack(const unsigned int& t_trac
   return !m_munkres.rowHasMatch(t_track_idx);
 }
 
-void hiros::track::SkeletonTracker::computeAvgTracks()
+double hiros::track::SkeletonTracker::computeAvgSrcTime(
+  const std::vector<hiros::track::utils::StampedSkeleton>& t_skeletons) const
 {
-  auto prev_avg_tracks = m_avg_tracks;
-
-  m_avg_tracks.skeletons.clear();
-
-  m_avg_tracks.src_time = computeAvgSrcTime();
-
-  for (const auto& track : m_tracks_to_merge) {
-    auto avg_track = computeAvgTrack(track.second);
-    bool empty_prev_avg_track = !prev_avg_tracks.hasSkeleton(avg_track.id);
-
-    if (m_params.filter_trajectories) {
-      if (empty_prev_avg_track) {
-        // new track
-        m_track_id_to_filter_map.emplace(
-          avg_track.id, hiros::track::Filter(avg_track, m_avg_tracks.src_time, m_params.filter_cutoff_frequency));
-      }
-      else {
-        m_track_id_to_filter_map.at(avg_track.id).filter(avg_track, m_avg_tracks.src_time);
-      }
-    }
-    else {
-      if (empty_prev_avg_track) {
-        // new track
-        initializeVelAndAcc(avg_track);
-      }
-      else {
-        computeVelAndAcc(
-          prev_avg_tracks.getSkeleton(avg_track.id), avg_track, (m_avg_tracks.src_time - prev_avg_tracks.src_time));
-      }
-    }
-
-    m_avg_tracks.addSkeleton(avg_track);
-  }
-}
-
-double hiros::track::SkeletonTracker::computeAvgSrcTime() const
-{
-  if (m_frames_to_merge.empty()) {
+  if (t_skeletons.empty()) {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  double avg_src_time = m_frames_to_merge.front().first.toSec();
-
-  for (unsigned int i = 1; i < m_frames_to_merge.size(); ++i) {
-    avg_src_time = (i * avg_src_time + m_frames_to_merge.at(i).first.toSec()) / (i + 1);
+  double sum{0};
+  unsigned int n_elems{0};
+  for (const auto& skel : t_skeletons) {
+    if (!utils::isEmpty(skel.skeleton)) {
+      sum += skel.src_time.toSec();
+      ++n_elems;
+    }
   }
 
-  return avg_src_time;
+  return sum / n_elems;
 }
 
-hiros::skeletons::types::Skeleton
-hiros::track::SkeletonTracker::computeAvgTrack(const std::vector<hiros::skeletons::types::Skeleton>& t_tracks) const
+void hiros::track::SkeletonTracker::computeAvgTrack(const int& t_id)
 {
-  hiros::skeletons::types::Skeleton avg_sk = t_tracks.front();
+  // Compute the avg track for id t_id
+  auto avg_track = m_tracks_to_merge.at(t_id).front();
+  avg_track.src_time = ros::Time(computeAvgSrcTime(m_tracks_to_merge.at(t_id)));
 
-  for (unsigned int i = 1; i < t_tracks.size(); ++i) {
-    utils::merge(avg_sk, t_tracks.at(i), i, 1, true);
+  for (unsigned int i = 1; i < m_tracks_to_merge.at(t_id).size(); ++i) {
+    utils::merge(avg_track, m_tracks_to_merge.at(t_id).at(i), i, 1, true);
   }
 
-  return avg_sk;
+  // Get the previous avg track for id t_id
+  auto prev_avg_track = utils::getSkeletonFromId(m_prev_avg_tracks, avg_track.skeleton.id);
+
+  if (m_params.filter_trajectories) {
+    m_track_filters[avg_track.skeleton.id].filter(avg_track, m_params.filter_cutoff_frequency);
+  }
+  else {
+    // Compute vel and acc only if we have previous data
+    if (prev_avg_track != nullptr) {
+      computeVelAndAcc(
+        prev_avg_track->skeleton, avg_track.skeleton, (avg_track.src_time - prev_avg_track->src_time).toSec());
+    }
+  }
+
+  addToAvgTracks(avg_track);
+
+  // Now we can update m_prev_avg_tracks that will be used on the next frame, and clean the tracks to merge relative
+  // to id t_id
+  m_prev_avg_tracks = m_avg_tracks;
+  m_tracks_to_merge.at(t_id).clear();
+
+  if (m_avg_tracks.size() > m_tracks.size()) {
+    ROS_FATAL_STREAM("Error: avg_tracks size > tracks size. This should not happen. Shutting down");
+    ros::shutdown();
+  }
+
+  m_ok_to_publish = (m_avg_tracks.size() == m_tracks.size());
+}
+
+void hiros::track::SkeletonTracker::addToAvgTracks(const utils::StampedSkeleton& t_track)
+{
+  auto idx = utils::getSkeletonIndexFromId(m_avg_tracks, t_track.skeleton.id);
+
+  if (idx == -1) {
+    m_avg_tracks.push_back(t_track);
+  }
+  else {
+    m_avg_tracks.at(static_cast<unsigned int>(idx)) = t_track;
+  }
 }
