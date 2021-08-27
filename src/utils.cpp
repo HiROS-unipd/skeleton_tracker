@@ -17,6 +17,21 @@ bool hiros::track::utils::isNaN(const cv::Mat_<double>& t_mat)
   return true;
 }
 
+double hiros::track::utils::min(const cv::Mat_<double>& t_mat)
+{
+  double min = std::numeric_limits<double>::max();
+
+  for (int r = 0; r < t_mat.rows; ++r) {
+    for (int c = 0; c < t_mat.cols; ++c) {
+      if (!std::isnan(t_mat(r, c))) {
+        min = std::min(t_mat(r, c), min);
+      }
+    }
+  }
+
+  return min;
+}
+
 double hiros::track::utils::max(const cv::Mat_<double>& t_mat)
 {
   double max = -std::numeric_limits<double>::max();
@@ -75,18 +90,12 @@ void hiros::track::utils::minWithIndex(const cv::Mat_<double>& t_mat,
   }
 }
 
-bool hiros::track::utils::isEmpty(const hiros::skeletons::types::MarkerSkeleton& t_skeleton)
+bool hiros::track::utils::isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton)
 {
-  for (auto& mkg : t_skeleton.marker_groups) {
-    if (!mkg.second.markers.empty()) {
-      return false;
-    }
-  }
-
-  return true;
+  return skeletons::utils::numberOfMarkers(t_skeleton) + skeletons::utils::numberOfOrientations(t_skeleton) == 0;
 }
 
-bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::MarkerSkeleton& t_skeleton)
+bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleton)
 {
   for (auto& mkg : t_skeleton.marker_groups) {
     if (!mkg.markers.empty()) {
@@ -94,42 +103,77 @@ bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::MarkerSkeleton& t_s
     }
   }
 
+  for (auto& org : t_skeleton.orientation_groups) {
+    if (!org.orientations.empty()) {
+      return false;
+    }
+  }
+
   return true;
 }
 
-void hiros::track::utils::merge(hiros::skeletons::types::MarkerSkeleton& t_s1,
-                                const skeletons::types::MarkerSkeleton& t_s2,
+void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1,
+                                const skeletons::types::Skeleton& t_s2,
                                 const double& t_w1,
                                 const double& t_w2,
                                 const bool& t_weight_by_confidence)
 {
   for (auto& s2_mkg : t_s2.marker_groups) {
-    for (auto& s2_mk : s2_mkg.second.markers) {
-      merge(t_s1, s2_mkg.second, s2_mk.second, t_w1, t_w2, t_weight_by_confidence);
+    for (auto& s2_mk : s2_mkg.markers) {
+      merge(t_s1, s2_mkg, s2_mk, t_w1, t_w2, t_weight_by_confidence);
+    }
+  }
+
+  for (auto& s2_org : t_s2.orientation_groups) {
+    for (auto& s2_or : s2_org.orientations) {
+      merge(t_s1, s2_org, s2_or, t_w1, t_w2, t_weight_by_confidence);
     }
   }
 }
 
-void hiros::track::utils::merge(skeletons::types::MarkerSkeleton& t_sk,
-                                const skeletons::types::MarkerGroup& t_mkg,
-                                const skeletons::types::Marker& t_mk,
+void hiros::track::utils::merge(skeletons::types::Skeleton& t_sk1,
+                                const skeletons::types::MarkerGroup& t_mkg2,
+                                const skeletons::types::Marker& t_mk2,
                                 const double& t_w1,
                                 const double& t_w2,
                                 const bool& t_weight_by_confidence)
 {
-  if (hiros::skeletons::utils::hasMarker(t_sk, t_mkg.id, t_mk.id)) {
-    t_sk.marker_groups.at(t_mkg.id).markers.at(t_mk.id) =
-      t_weight_by_confidence ? wavg(t_sk.marker_groups.at(t_mkg.id).markers.at(t_mk.id),
-                                    t_mk,
-                                    t_w1 * t_sk.marker_groups.at(t_mkg.id).markers.at(t_mk.id).confidence,
-                                    t_w2 * t_mk.confidence)
-                             : wavg(t_sk.marker_groups.at(t_mkg.id).markers.at(t_mk.id), t_mk, t_w1, t_w2);
-  }
-  else if (hiros::skeletons::utils::hasMarkerGroup(t_sk, t_mkg.id)) {
-    t_sk.marker_groups.at(t_mkg.id).addMarker(t_mk);
+  if (t_sk1.hasMarkerGroup(t_mkg2.id)) {
+    auto& mkg1 = t_sk1.getMarkerGroup(t_mkg2.id);
+    if (mkg1.hasMarker(t_mk2.id)) {
+      auto& mk1 = mkg1.getMarker(t_mk2.id);
+      mk1 = t_weight_by_confidence ? wavg(mk1, t_mk2, t_w1 * mk1.confidence, t_w2 * t_mk2.confidence)
+                                   : wavg(mk1, t_mk2, t_w1, t_w2);
+    }
+    else {
+      mkg1.addMarker(t_mk2);
+    }
   }
   else {
-    t_sk.addMarkerGroup(t_mkg);
+    t_sk1.addMarkerGroup(t_mkg2);
+  }
+}
+
+void hiros::track::utils::merge(skeletons::types::Skeleton& t_sk1,
+                                const skeletons::types::OrientationGroup& t_org2,
+                                const skeletons::types::Orientation& t_or2,
+                                const double& t_w1,
+                                const double& t_w2,
+                                const bool& t_weight_by_confidence)
+{
+  if (t_sk1.hasOrientationGroup(t_org2.id)) {
+    auto& org1 = t_sk1.getOrientationGroup(t_org2.id);
+    if (org1.hasOrientation(t_or2.id)) {
+      auto& or1 = org1.getOrientation(t_or2.id);
+      or1 = t_weight_by_confidence ? wavg(or1, t_or2, t_w1 * or1.confidence, t_w2 * t_or2.confidence)
+                                   : wavg(or1, t_or2, t_w1, t_w2);
+    }
+    else {
+      org1.addOrientation(t_or2);
+    }
+  }
+  else {
+    t_sk1.addOrientationGroup(t_org2);
   }
 }
 
@@ -158,64 +202,6 @@ hiros::skeletons::types::Marker hiros::track::utils::wavg(const skeletons::types
   avg_mk.point.acceleration = wavg(t_mk1.point.acceleration, t_mk2.point.acceleration, t_w1, t_w2);
 
   return avg_mk;
-}
-
-bool hiros::track::utils::isEmpty(const hiros::skeletons::types::OrientationSkeleton& t_skeleton)
-{
-  for (auto& org : t_skeleton.orientation_groups) {
-    if (!org.second.orientations.empty()) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::OrientationSkeleton& t_skeleton)
-{
-  for (auto& org : t_skeleton.orientation_groups) {
-    if (!org.orientations.empty()) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void hiros::track::utils::merge(hiros::skeletons::types::OrientationSkeleton& t_s1,
-                                const hiros::skeletons::types::OrientationSkeleton& t_s2,
-                                const double& t_w1,
-                                const double& t_w2,
-                                const bool& t_weight_by_confidence)
-{
-  for (auto& s2_org : t_s2.orientation_groups) {
-    for (auto& s2_or : s2_org.second.orientations) {
-      merge(t_s1, s2_org.second, s2_or.second, t_w1, t_w2, t_weight_by_confidence);
-    }
-  }
-}
-
-void hiros::track::utils::merge(hiros::skeletons::types::OrientationSkeleton& t_sk,
-                                const hiros::skeletons::types::OrientationGroup& t_org,
-                                const hiros::skeletons::types::Orientation& t_or,
-                                const double& t_w1,
-                                const double& t_w2,
-                                const bool& t_weight_by_confidence)
-{
-  if (hiros::skeletons::utils::hasOrientation(t_sk, t_org.id, t_or.id)) {
-    t_sk.orientation_groups.at(t_org.id).orientations.at(t_or.id) =
-      t_weight_by_confidence ? wavg(t_sk.orientation_groups.at(t_org.id).orientations.at(t_or.id),
-                                    t_or,
-                                    t_w1 * t_sk.orientation_groups.at(t_org.id).orientations.at(t_or.id).confidence,
-                                    t_w2 * t_or.confidence)
-                             : wavg(t_sk.orientation_groups.at(t_org.id).orientations.at(t_or.id), t_or, t_w1, t_w2);
-  }
-  else if (hiros::skeletons::utils::hasOrientationGroup(t_sk, t_org.id)) {
-    t_sk.orientation_groups.at(t_org.id).addOrientation(t_or);
-  }
-  else {
-    t_sk.addOrientationGroup(t_org);
-  }
 }
 
 tf2::Quaternion hiros::track::utils::wavg(const tf2::Quaternion& t_q1,

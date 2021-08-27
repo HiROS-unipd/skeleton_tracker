@@ -1,5 +1,5 @@
-#ifndef hiros_skeleton_tracker_MarkerSkeletonTracker_h
-#define hiros_skeleton_tracker_MarkerSkeletonTracker_h
+#ifndef hiros_skeleton_tracker_SkeletonTracker_h
+#define hiros_skeleton_tracker_SkeletonTracker_h
 
 // ROS dependencies
 #include <ros/ros.h>
@@ -8,7 +8,7 @@
 #include "opencv2/opencv.hpp"
 
 // Custom Ros Message dependencies
-#include "hiros_skeleton_msgs/MarkerSkeletonGroup.h"
+#include "hiros_skeleton_msgs/SkeletonGroup.h"
 
 // Custom External Packages dependencies
 #include "skeletons/types.h"
@@ -24,9 +24,9 @@
 namespace hiros {
   namespace track {
 
-    typedef Buffer<hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr> MarkerSkeletonGroupsBuffer;
+    typedef Buffer<hiros_skeleton_msgs::SkeletonGroupConstPtr> SkeletonGroupsBuffer;
 
-    struct MarkerSkeletonTrackerParameters
+    struct SkeletonTrackerParameters
     {
       std::string node_name;
 
@@ -34,25 +34,29 @@ namespace hiros {
       std::string out_msg_topic_name;
 
       double fixed_delay;
-      int min_markers;
-      double min_distance;
-      double max_distance;
+      int min_joints;
+      double min_markers_distance;
+      double max_markers_distance;
+      double min_orientations_distance;
+      double max_orientations_distance;
       ros::Duration max_delta_t;
-      bool use_marker_positions;
+      bool use_markers;
       bool use_marker_velocities;
+      bool use_orientations;
+      bool use_orientation_velocities;
       double velocity_weight;
       bool weight_distances_by_confidences;
       bool weight_distances_by_velocities;
 
-      bool filter_marker_trajectories;
+      bool filter_trajectories;
       double filter_cutoff_frequency;
     };
 
-    class MarkerSkeletonTracker
+    class SkeletonTracker
     {
     public:
-      MarkerSkeletonTracker();
-      ~MarkerSkeletonTracker();
+      SkeletonTracker();
+      ~SkeletonTracker();
 
       void configure();
       void start();
@@ -60,16 +64,16 @@ namespace hiros {
     private:
       void stop();
       void setupRosTopics();
-      void checkFrameIdConsistency(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
+      void checkFrameIdConsistency(hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
 
-      void detectorCallback(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
+      void detectorCallback(hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
       void trackOldestFrame();
 
       ros::Time getPreviousSourceTime() const;
-      void addNewSkeletonGroupToBuffer(hiros_skeleton_msgs::MarkerSkeletonGroupConstPtr t_skeleton_group_msg);
+      void addNewSkeletonGroupToBuffer(hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
       void eraseOldSkeletonGroupFromBuffer();
       void mergeTracks();
-      void publishTracks(const hiros::skeletons::types::MarkerSkeletonGroup& t_tracks) const;
+      void publishTracks(const hiros::skeletons::types::SkeletonGroup& t_tracks) const;
 
       void fillDetections();
       void createCostMatrix();
@@ -79,14 +83,18 @@ namespace hiros {
       void addNewTracks();
       void removeUnassociatedTracks();
 
-      double computeDistance(const hiros::skeletons::types::MarkerSkeleton& t_track,
-                             hiros::skeletons::types::MarkerSkeleton& t_detection) const;
-      void initializeVelAndAcc(hiros::skeletons::types::MarkerSkeleton& t_skeleton) const;
-      void computeVelAndAcc(const hiros::skeletons::types::MarkerSkeleton& t_track,
-                            hiros::skeletons::types::MarkerSkeleton& t_detection,
+      double computeMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                    hiros::skeletons::types::Skeleton& t_detection) const;
+      double computeOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                         hiros::skeletons::types::Skeleton& t_detection) const;
+      double computeDistance(const hiros::skeletons::types::Skeleton& t_track,
+                             hiros::skeletons::types::Skeleton& t_detection) const;
+      void initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton) const;
+      void computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
+                            hiros::skeletons::types::Skeleton& t_detection,
                             const double& t_dt) const;
-      void computeVelocities(const hiros::skeletons::types::MarkerSkeleton& t_track,
-                             hiros::skeletons::types::MarkerSkeleton& t_detection,
+      void computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
+                             hiros::skeletons::types::Skeleton& t_detection,
                              const double& t_dt) const;
       hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::Point& t_prev,
                                                         const hiros::skeletons::types::Point& t_curr,
@@ -95,19 +103,19 @@ namespace hiros {
                                                                 const hiros::skeletons::types::Point& t_curr,
                                                                 const double& t_dt) const;
       void updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx);
-      void addNewTrack(const hiros::skeletons::types::MarkerSkeleton& t_detection);
+      void addNewTrack(const hiros::skeletons::types::Skeleton& t_detection);
       bool unassociatedDetection(const unsigned int& t_det_idx) const;
       bool unassociatedTrack(const unsigned int& t_track_idx) const;
 
       void computeAvgTracks();
       double computeAvgSrcTime() const;
-      hiros::skeletons::types::MarkerSkeleton
-      computeAvgTrack(const std::vector<hiros::skeletons::types::MarkerSkeleton>& t_tracks) const;
+      hiros::skeletons::types::Skeleton
+      computeAvgTrack(const std::vector<hiros::skeletons::types::Skeleton>& t_tracks) const;
 
       ros::NodeHandle m_nh;
       std::string m_node_namespace;
 
-      MarkerSkeletonTrackerParameters m_params;
+      SkeletonTrackerParameters m_params;
 
       std::string m_frame_id;
       unsigned long m_n_detectors;
@@ -117,9 +125,11 @@ namespace hiros {
       // vector<pair<src_frame, frame_id>>
       std::map<std::string, std::string> m_received_frames;
 
-      MarkerSkeletonGroupsBuffer m_skeleton_groups_buffer;
+      SkeletonGroupsBuffer m_skeleton_groups_buffer;
 
       Munkres m_munkres;
+      cv::Mat_<double> m_markers_distance_matrix;
+      cv::Mat_<double> m_orientations_distance_matrix;
       cv::Mat_<double> m_cost_matrix;
       cv::Mat_<int> m_munkres_matrix;
       int m_last_track_id;
@@ -130,13 +140,13 @@ namespace hiros {
       // vector<pair<src_time, src_frame>>
       std::vector<std::pair<ros::Time, std::string>> m_frames_to_merge;
       // map<track_id, vector<skeleton_tracks>>
-      std::map<int, std::vector<skeletons::types::MarkerSkeleton>> m_tracks_to_merge;
+      std::map<int, std::vector<skeletons::types::Skeleton>> m_tracks_to_merge;
 
       bool m_ok_to_publish;
 
-      skeletons::types::MarkerSkeletonGroup m_detections{};
-      skeletons::types::MarkerSkeletonGroup m_tracks{};
-      skeletons::types::MarkerSkeletonGroup m_avg_tracks{};
+      skeletons::types::SkeletonGroup m_detections{};
+      skeletons::types::SkeletonGroup m_tracks{};
+      skeletons::types::SkeletonGroup m_avg_tracks{};
 
       bool m_configured;
     };

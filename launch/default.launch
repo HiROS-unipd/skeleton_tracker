@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="node_required" default="false" />
+  <arg name="node_name"     default="node"  />
+
+  <!--************************************-->
+  <!-- Hi-Ros Skeleton Tracker Parameters -->
+  <!--************************************-->
+  <arg name="in_skeleton_group_topics"        default="[]"    />
+  <arg name="out_msg_topic_name"              default="track" />
+
+  <arg name="camera_frequency"                default="-1"    />
+
+  <arg name="fixed_delay"                     default="0"     />
+  <arg name="min_joints"                      default="0"     />
+  <arg name="min_markers_distance"            default="-1"    />
+  <arg name="max_markers_distance"            default="-1"    />
+  <arg name="min_orientations_distance"       default="-1"    />
+  <arg name="max_orientations_distance"       default="-1"    />
+  <arg name="max_delta_t"                     default="0"     />
+  <arg name="use_markers"                     default="true"  />
+  <arg name="use_marker_velocities"           default="false" />
+  <arg name="use_orientations"                default="true"  />
+  <arg name="use_orientation_velocities"      default="false" />
+  <arg name="velocity_weight"                 default="0"     />
+  <arg name="weight_distances_by_confidences" default="false" />
+  <arg name="weight_distances_by_velocities"  default="false" />
+
+  <arg name="filter_trajectories"             default="false" />
+  <arg name="filter_cutoff_frequency"         default="0.0"   />
+
+  <!--******************************-->
+  <!-- Hi-Ros Skeleton Tracker Node -->
+  <!--******************************-->
+  <node pkg="hiros_skeleton_tracker" type="hiros_skeleton_tracker" ns="hiros/st" name="$(arg node_name)" output="screen" required="$(arg node_required)">
+    <param name="node_name"                       type="str"    value="$(arg node_name)"                       />
+
+    <rosparam param="in_skeleton_group_topics"    subst_value="True">$(arg in_skeleton_group_topics)  </rosparam>
+    <param name="out_msg_topic_name"              type="str"    value="$(arg out_msg_topic_name)"              />
+
+    <param name="camera_frequency"                type="double" value="$(arg camera_frequency)"                />
+
+    <param name="fixed_delay"                     type="double" value="$(arg fixed_delay)"                     />
+    <param name="min_joints"                      type="int"    value="$(arg min_joints)"                      />
+    <param name="min_markers_distance"            type="double" value="$(arg min_markers_distance)"            />
+    <param name="max_markers_distance"            type="double" value="$(arg max_markers_distance)"            />
+    <param name="min_orientations_distance"       type="double" value="$(arg min_orientations_distance)"       />
+    <param name="max_orientations_distance"       type="double" value="$(arg max_orientations_distance)"       />
+    <param name="max_delta_t"                     type="double" value="$(arg max_delta_t)"                     />
+    <param name="use_markers"                     type="bool"   value="$(arg use_markers)"                     />
+    <param name="use_marker_velocities"           type="bool"   value="$(arg use_marker_velocities)"           />
+    <param name="use_orientations"                type="bool"   value="$(arg use_orientations)"                />
+    <param name="use_orientation_velocities"      type="bool"   value="$(arg use_orientation_velocities)"      />
+    <param name="velocity_weight"                 type="double" value="$(arg velocity_weight)"                 />
+    <param name="weight_distances_by_confidences" type="bool"   value="$(arg weight_distances_by_confidences)" />
+    <param name="weight_distances_by_velocities"  type="bool"   value="$(arg weight_distances_by_velocities)"  />
+
+    <param name="filter_trajectories"             type="bool"   value="$(arg filter_trajectories)"             />
+    <param name="filter_cutoff_frequency"         type="double" value="$(arg filter_cutoff_frequency)"         />
+  </node>
+
+</launch>

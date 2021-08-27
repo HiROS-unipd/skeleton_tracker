@@ -21,10 +21,10 @@ namespace hiros {
     class Filter
     {
     public:
-      Filter(hiros::skeletons::types::MarkerSkeleton& t_skeleton, const double& t_time, const double& t_cutoff);
+      Filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time, const double& t_cutoff);
       ~Filter();
 
-      void filter(hiros::skeletons::types::MarkerSkeleton& t_skeleton, const double& t_time);
+      void filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time);
 
     private:
       // <marker_group_id, <marker_id, filter>>
