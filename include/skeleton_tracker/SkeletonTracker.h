@@ -15,7 +15,6 @@
 
 // Custom Internal dependencies
 #include "skeleton_tracker/Buffer.h"
-#include "skeleton_tracker/Filter.h"
 #include "skeleton_tracker/Munkres.h"
 #include "skeleton_tracker/utils.h"
 
@@ -50,9 +49,6 @@ namespace hiros {
       double velocity_weight;
       bool weight_distances_by_confidences;
       bool weight_distances_by_velocities;
-
-      bool filter_trajectories;
-      double filter_cutoff_frequency;
     };
 
     class SkeletonTracker
@@ -144,9 +140,6 @@ namespace hiros {
       cv::Mat_<double> m_cost_matrix;
       cv::Mat_<int> m_munkres_matrix;
       int m_last_track_id;
-
-      // map<track_id, filter>
-      std::map<int, Filter> m_track_filters;
 
       // map<track_id, vector<skeleton_tracks>>
       std::map<int, std::vector<utils::StampedSkeleton>> m_tracks_to_merge;

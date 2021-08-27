@@ -74,14 +74,6 @@ void hiros::track::SkeletonTracker::configure()
   m_nh.getParam("weight_distances_by_confidences", m_params.weight_distances_by_confidences);
   m_nh.getParam("weight_distances_by_velocities", m_params.weight_distances_by_velocities);
 
-  m_nh.getParam("filter_trajectories", m_params.filter_trajectories);
-  m_nh.getParam("filter_cutoff_frequency", m_params.filter_cutoff_frequency);
-
-  if (m_params.filter_trajectories && (m_params.filter_cutoff_frequency <= 0.0)) {
-    ROS_FATAL_STREAM("Cutoff frequency must be greater than 0 Hz. Unable to continue");
-    ros::shutdown();
-  }
-
   if (!m_params.use_markers && !m_params.use_orientations && !m_params.use_marker_velocities
       && !m_params.use_orientation_velocities) {
     ROS_FATAL_STREAM(
@@ -424,7 +416,6 @@ void hiros::track::SkeletonTracker::removeUnassociatedTracks()
                                           m_avg_tracks.end(),
                                           [&](const auto& avg_track) { return (avg_track.skeleton.id == id); }),
                            m_avg_tracks.end());
-        m_track_filters.erase(id);
       }
     }
   }
@@ -771,15 +762,10 @@ void hiros::track::SkeletonTracker::computeAvgTrack(const int& t_id)
   // Get the previous avg track for id t_id
   auto prev_avg_track = utils::getSkeletonFromId(m_prev_avg_tracks, avg_track.skeleton.id);
 
-  if (m_params.filter_trajectories) {
-    m_track_filters[avg_track.skeleton.id].filter(avg_track, m_params.filter_cutoff_frequency);
-  }
-  else {
-    // Compute vel and acc only if we have previous data
-    if (prev_avg_track != nullptr) {
-      computeVelAndAcc(
-        prev_avg_track->skeleton, avg_track.skeleton, (avg_track.src_time - prev_avg_track->src_time).toSec());
-    }
+  // Compute vel and acc only if we have previous data
+  if (prev_avg_track != nullptr) {
+    computeVelAndAcc(
+      prev_avg_track->skeleton, avg_track.skeleton, (avg_track.src_time - prev_avg_track->src_time).toSec());
   }
 
   addToAvgTracks(avg_track);
