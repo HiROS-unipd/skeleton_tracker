@@ -6,13 +6,10 @@
 
 int main(int argc, char* argv[])
 {
-  std::string node_name = "hiros_mst";
-  ros::init(argc, argv, node_name);
+  ros::init(argc, argv, "hiros_skeleton_tracker");
 
   hiros::track::SkeletonTracker st;
   st.start();
-
-  ros::spin();
 
   return 0;
 }

@@ -98,6 +98,7 @@ void hiros::track::SkeletonTracker::start()
   }
 
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...RUNNING" << BASH_MSG_RESET);
+  ros::spin();
 }
 
 void hiros::track::SkeletonTracker::stop()
