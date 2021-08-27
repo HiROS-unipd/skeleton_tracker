@@ -303,8 +303,8 @@ void hiros::track::SkeletonTracker::createCostMatrix()
         computeOrientationsDistance(tracks_ptr->skeletons.at(static_cast<unsigned int>(track_idx)),
                                     m_detections.skeletons.at(static_cast<unsigned int>(det_idx)));
       m_cost_matrix(track_idx, det_idx) =
-        computeDistance(tracks_ptr->skeletons.at(static_cast<unsigned int>(track_idx)),
-                        m_detections.skeletons.at(static_cast<unsigned int>(det_idx)));
+        computeWeightedDistance(tracks_ptr->skeletons.at(static_cast<unsigned int>(track_idx)),
+                                m_detections.skeletons.at(static_cast<unsigned int>(det_idx)));
     }
   }
 
@@ -403,6 +403,55 @@ void hiros::track::SkeletonTracker::removeUnassociatedTracks()
 double hiros::track::SkeletonTracker::computeMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
                                                              hiros::skeletons::types::Skeleton& t_detection) const
 {
+  double dist = 0;
+  unsigned int n_mks = 0;
+
+  for (const auto& det_mkg : t_detection.marker_groups) {
+    if (t_track.hasMarkerGroup(det_mkg.id)) {
+      auto& track_mkg = t_track.getMarkerGroup(det_mkg.id);
+
+      for (const auto& det_mk : det_mkg.markers) {
+        if (track_mkg.hasMarker(det_mk.id)) {
+          auto& track_mk = track_mkg.getMarker(det_mk.id);
+
+          dist += hiros::skeletons::utils::distance(det_mk.point.position, track_mk.point.position);
+          ++n_mks;
+        }
+      }
+    }
+  }
+
+  return (n_mks > 0) ? dist / n_mks : std::numeric_limits<double>::max();
+}
+
+double hiros::track::SkeletonTracker::computeOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                                                  hiros::skeletons::types::Skeleton& t_detection) const
+{
+  double dist = 0;
+  unsigned int n_ors = 0;
+
+  for (const auto& det_org : t_detection.orientation_groups) {
+    if (t_track.hasOrientationGroup(det_org.id)) {
+      auto& track_org = t_track.getOrientationGroup(det_org.id);
+
+      for (const auto& det_or : det_org.orientations) {
+        if (track_org.hasOrientation(det_or.id)) {
+          auto& track_or = track_org.getOrientation(det_or.id);
+
+          dist += hiros::skeletons::utils::distance(det_or.mimu.orientation, track_or.mimu.orientation);
+          ++n_ors;
+        }
+      }
+    }
+  }
+
+  return (n_ors > 0) ? dist / n_ors : std::numeric_limits<double>::max();
+}
+
+double
+hiros::track::SkeletonTracker::computeWeightedMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                                              hiros::skeletons::types::Skeleton& t_detection) const
+{
   // If both the Skeletons do not have markers, then they are pure OrientationSkeletons
   if (skeletons::utils::numberOfMarkers(t_track) == 0 && skeletons::utils::numberOfMarkers(t_detection) == 0) {
     return 0;
@@ -463,8 +512,9 @@ double hiros::track::SkeletonTracker::computeMarkersDistance(const hiros::skelet
                                        : std::numeric_limits<double>::max();
 }
 
-double hiros::track::SkeletonTracker::computeOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                                                  hiros::skeletons::types::Skeleton& t_detection) const
+double
+hiros::track::SkeletonTracker::computeWeightedOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                                                   hiros::skeletons::types::Skeleton& t_detection) const
 {
   // If both the Skeletons do not have orientations, then they are pure MarkerSkeletons
   if (skeletons::utils::numberOfOrientations(t_track) == 0
@@ -523,10 +573,11 @@ double hiros::track::SkeletonTracker::computeOrientationsDistance(const hiros::s
                                       : std::numeric_limits<double>::max();
 }
 
-double hiros::track::SkeletonTracker::computeDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                                      hiros::skeletons::types::Skeleton& t_detection) const
+double hiros::track::SkeletonTracker::computeWeightedDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                                              hiros::skeletons::types::Skeleton& t_detection) const
 {
-  return computeMarkersDistance(t_track, t_detection) + computeOrientationsDistance(t_track, t_detection);
+  return computeWeightedMarkersDistance(t_track, t_detection)
+         + computeWeightedOrientationsDistance(t_track, t_detection);
 }
 
 void hiros::track::SkeletonTracker::initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton) const

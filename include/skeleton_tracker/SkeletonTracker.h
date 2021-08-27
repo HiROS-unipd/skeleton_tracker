@@ -87,8 +87,13 @@ namespace hiros {
                                     hiros::skeletons::types::Skeleton& t_detection) const;
       double computeOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
                                          hiros::skeletons::types::Skeleton& t_detection) const;
-      double computeDistance(const hiros::skeletons::types::Skeleton& t_track,
-                             hiros::skeletons::types::Skeleton& t_detection) const;
+      double computeWeightedMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                            hiros::skeletons::types::Skeleton& t_detection) const;
+      double computeWeightedOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                                 hiros::skeletons::types::Skeleton& t_detection) const;
+      double computeWeightedDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                     hiros::skeletons::types::Skeleton& t_detection) const;
+
       void initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton) const;
       void computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
                             hiros::skeletons::types::Skeleton& t_detection,
