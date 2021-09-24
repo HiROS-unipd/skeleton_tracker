@@ -496,13 +496,9 @@ double hiros::track::SkeletonTracker::computeWeightedOrientationsDistance(
   double weight;
 
   auto filtered_det = t_detection;
-  // TODO: properly filter orientations to compute velocity and acceleration
-  if (m_params.use_orientation_velocities || m_params.weight_distances_by_velocities) {
-    computeVelAndAcc(
-      t_track,
-      filtered_det,
-      (m_skeleton_groups_buffer.get_src_time() - utils::getSkeletonFromId(m_tracks, t_track.id)->src_time).toSec());
-  }
+
+  m_track_filters.at(t_track.id)
+    .updVelAndAcc(filtered_det, m_skeleton_groups_buffer.get_src_time().toSec(), k_cutoff_frequency);
 
   for (const auto& det_org : filtered_det.orientation_groups) {
     if (t_track.hasOrientationGroup(det_org.id)) {

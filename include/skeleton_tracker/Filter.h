@@ -21,6 +21,22 @@ namespace hiros {
       std::array<rtb::Filter::StateSpaceFilter<double>, 3> filters;
     };
 
+    class OrientationFilter
+    {
+    public:
+      void filter(hiros::skeletons::types::MIMU& t_mimu, const double& t_time, const double& t_cutoff);
+
+    private:
+      void computeOrientation(hiros::skeletons::types::MIMU& t_mimu, const double& t_time, const double& t_cutoff);
+      void computeVelocity(hiros::skeletons::types::MIMU& t_mimu,
+                           const tf2::Quaternion& t_prev_orientation,
+                           const double& t_prev_time);
+
+      double m_last_time{std::numeric_limits<double>::quiet_NaN()};
+      tf2::Quaternion m_last_orientation{};
+      tf2::Vector3 m_last_velocity{};
+    };
+
     class Filter
     {
     public:
@@ -28,6 +44,9 @@ namespace hiros {
       Filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time, const double& t_cutoff);
       Filter(utils::StampedSkeleton& t_skeleton, const double& t_cutoff);
       ~Filter() {}
+
+      void updateMarkerFilters(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time);
+      void updateOrientationFilters(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time);
 
       // Get filtered value and update the filter's internal state
       void filter(hiros::skeletons::types::Skeleton& t_skeleton,
@@ -60,8 +79,11 @@ namespace hiros {
     private:
       void init(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time, const double& t_cutoff);
 
-      // <marker_group_id, <marker_id, filter>>
-      std::map<int, std::map<int, StateSpaceFilter3>> m_filters{};
+      // <marker_group_id, <marker_id, marker_filter>>
+      std::map<int, std::map<int, StateSpaceFilter3>> m_marker_filters{};
+      // <orientation_group_id, <orientation_id, orientation_filter>>
+      std::map<int, std::map<int, OrientationFilter>> m_orientation_filters{};
+
       double m_cutoff{};
       bool m_initialized{false};
     };
