@@ -15,6 +15,12 @@ namespace hiros {
 
       cv::Mat_<int> solve(const cv::Mat_<double>& t_matrix, const bool& t_min = true);
 
+      bool match(const unsigned int& t_row, const unsigned int& t_col) const;
+      bool colHasMatch(const unsigned int& t_col) const;
+      int findMatchInCol(const unsigned int& t_col) const;
+      bool rowHasMatch(const unsigned int& t_row) const;
+      int findMatchInRow(const unsigned int& t_row) const;
+
     private:
       enum Step
       {
@@ -51,7 +57,8 @@ namespace hiros {
       void clearCovers();
       void erasePrimes();
 
-      cv::Mat_<double> m_matrix_in_padded;
+      cv::Mat_<double> m_cv_matrix_in_padded;
+      cv::Mat_<int> m_cv_matrix_out;
 
       std::vector<std::vector<double>> m_matrix_in;
       std::vector<std::vector<int>> m_matrix_out;

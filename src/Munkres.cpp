@@ -41,14 +41,63 @@ cv::Mat_<int> hiros::track::Munkres::solve(const cv::Mat_<double>& t_matrix_in, 
   }
 
   // Conversion from array to cv::Mat
-  cv::Mat_<int> matrix_out(t_matrix_in.rows, t_matrix_in.cols, CV_64F);
+  m_cv_matrix_out = cv::Mat_<int>(t_matrix_in.rows, t_matrix_in.cols, CV_64F);
   for (int r = 0; r < t_matrix_in.rows; ++r) {
     for (int c = 0; c < t_matrix_in.cols; ++c) {
-      matrix_out(r, c) = m_matrix_out[static_cast<unsigned int>(r)][static_cast<unsigned int>(c)];
+      m_cv_matrix_out(r, c) = m_matrix_out[static_cast<unsigned int>(r)][static_cast<unsigned int>(c)];
     }
   }
 
-  return matrix_out;
+  return m_cv_matrix_out;
+}
+
+bool hiros::track::Munkres::match(const unsigned int& t_row, const unsigned int& t_col) const
+{
+  return (m_matrix_out[t_row][t_col] == 1);
+}
+
+bool hiros::track::Munkres::colHasMatch(const unsigned int& t_col) const
+{
+  for (int r = 0; r < m_cv_matrix_out.rows; ++r) {
+    if (m_cv_matrix_out(r, static_cast<int>(t_col)) == 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+int hiros::track::Munkres::findMatchInCol(const unsigned int& t_col) const
+{
+  for (int r = 0; r < m_cv_matrix_out.rows; ++r) {
+    if (m_cv_matrix_out(r, static_cast<int>(t_col)) == 1) {
+      return r;
+    }
+  }
+
+  return -1;
+}
+
+bool hiros::track::Munkres::rowHasMatch(const unsigned int& t_row) const
+{
+  for (int c = 0; c < m_cv_matrix_out.cols; ++c) {
+    if (m_cv_matrix_out(static_cast<int>(t_row), c) == 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+int hiros::track::Munkres::findMatchInRow(const unsigned int& t_row) const
+{
+  for (int c = 0; c < m_cv_matrix_out.cols; ++c) {
+    if (m_cv_matrix_out(static_cast<int>(t_row), c) == 1) {
+      return c;
+    }
+  }
+
+  return -1;
 }
 
 void hiros::track::Munkres::preprocess(const cv::Mat_<double>& t_matrix_in, const bool& t_min)
@@ -64,11 +113,12 @@ void hiros::track::Munkres::preprocess(const cv::Mat_<double>& t_matrix_in, cons
   m_cols = m_max_dim;
 
   // Pad input matrix with max matrix value to make it square
-  m_matrix_in_padded = cv::Mat_<double>(static_cast<int>(m_rows), static_cast<int>(m_cols), getMaxValue(t_matrix_in));
+  m_cv_matrix_in_padded =
+    cv::Mat_<double>(static_cast<int>(m_rows), static_cast<int>(m_cols), getMaxValue(t_matrix_in));
 
   for (int r = 0; r < t_matrix_in.rows; ++r) {
     for (int c = 0; c < t_matrix_in.cols; ++c) {
-      m_matrix_in_padded(r, c) = t_matrix_in(r, c);
+      m_cv_matrix_in_padded(r, c) = t_matrix_in(r, c);
     }
   }
 
@@ -98,7 +148,7 @@ void hiros::track::Munkres::initializeVectors()
     m_matrix_in[r].resize(m_cols);
     m_matrix_out[r].resize(m_cols);
 
-    m_matrix_in[r] = m_matrix_in_padded.row(static_cast<int>(r));
+    m_matrix_in[r] = m_cv_matrix_in_padded.row(static_cast<int>(r));
     std::fill(m_matrix_out[r].begin(), m_matrix_out[r].end(), 0);
   }
 

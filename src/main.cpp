@@ -2,17 +2,14 @@
 #include <ros/ros.h>
 
 // Internal dependencies
-#include "skeleton_tracker/Tracker.h"
+#include "skeleton_tracker/SkeletonTracker.h"
 
 int main(int argc, char* argv[])
 {
-  std::string node_name = "hiros_opt";
-  ros::init(argc, argv, node_name);
+  ros::init(argc, argv, "hiros_skeleton_tracker");
 
-  hiros::track::Tracker tracker;
-  tracker.start();
-
-  ros::spin();
+  hiros::track::SkeletonTracker st;
+  st.start();
 
   return 0;
 }

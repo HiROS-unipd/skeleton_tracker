@@ -15,5 +15,5 @@
 
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
-  <depend>skeleton_msgs</depend>
+  <depend>hiros_skeleton_msgs</depend>
 </package>

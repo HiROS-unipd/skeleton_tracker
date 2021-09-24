@@ -1,31 +1,32 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="node_name"     default="node_01" />
+  <!--***********************************************************-->
+  <!-- Hi-Ros Skeleton Tracker Node: Parameters override and Run -->
+  <!--***********************************************************-->
+  <include file="$(find hiros_skeleton_tracker)/launch/default.launch">
+    <arg name="node_required"                        value="true"               />
+    <arg name="node_name"                            value="node_01"            />
 
-  <!--************************************************************-->
-  <!-- Hi-Ros Skeleton Tracking Node: Parameters override and Run -->
-  <!--************************************************************-->
-  <include file="$(find hiros_skeleton_tracker)/launch/hiros_skeleton_tracker_default.launch">
-    <arg name="hiros_skeleton_tracker_node_required" value="true"                                           />
-    <arg name="node_name"                            value="$(arg node_name)"                               />
+    <arg name="in_skeleton_group_topics"             value="[/topic1, /topic2]" />
+    <arg name="out_msg_topic_name"                   value="skeleton_group"     />
 
-    <arg name="in_skeleton_group_topics"             value="[/topic1, /topic2]"                             />
-    <arg name="out_msg_topic_name"                   value="skeleton_group"                                 />
+    <arg name="camera_frequency"                     value="30"                 />
 
-    <arg name="fixed_delay"                          value="0.1"                                            />
-    <arg name="min_keypoints"                        value="7"                                              />
-    <arg name="max_distance"                         value="100"                                            />
-    <arg name="max_delta_t"                          value="0.05"                                           />
-    <arg name="use_keypoint_positions"               value="true"                                           />
-    <arg name="use_keypoint_velocities"              value="true"                                           />
-    <arg name="velocity_weight"                      value="0.05"                                           />
-    <arg name="weight_distances_by_confidences"      value="false"                                          />
-    <arg name="weight_distances_by_velocities"       value="false"                                          />
-
-    <arg name="filter_keypoint_trajectories"         value="true"                                           />
-    <arg name="filter_cutoff_frequency"              value="6.0"                                            />
-
+    <arg name="fixed_delay"                          value="0.1"                />
+    <arg name="min_joints"                           value="7"                  />
+    <arg name="min_markers_distance"                 value="0.5"                />
+    <arg name="max_markers_distance"                 value="100"                />
+    <arg name="min_orientations_distance"            value="0.5"                />
+    <arg name="max_orientations_distance"            value="100"                />
+    <arg name="max_delta_t"                          value="0.05"               />
+    <arg name="use_markers"                          value="true"               />
+    <arg name="use_marker_velocities"                value="true"               />
+    <arg name="use_orientations"                     value="true"               />
+    <arg name="use_orientation_velocities"           value="true"               />
+    <arg name="velocity_weight"                      value="0.05"               />
+    <arg name="weight_distances_by_confidences"      value="false"              />
+    <arg name="weight_distances_by_velocities"       value="false"              />
   </include>
 
 </launch>
