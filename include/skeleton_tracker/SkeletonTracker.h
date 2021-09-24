@@ -34,8 +34,6 @@ namespace hiros {
       std::vector<std::string> in_skeleton_group_topics;
       std::string out_msg_topic_name;
 
-      double camera_frequency;
-
       ros::Duration fixed_delay;
       int min_joints;
       double min_markers_distance;
@@ -69,7 +67,6 @@ namespace hiros {
       void checkFrameIdConsistency(hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
       void addNewSkeletonGroupToBuffer(hiros_skeleton_msgs::SkeletonGroupConstPtr t_skeleton_group_msg);
       void trackOldestFrame();
-      void mergeTracks();
 
       ros::Time getPreviousSrcTime() const;
       ros::Time getCurrentSrcTime() const;
@@ -86,7 +83,6 @@ namespace hiros {
       void removeUnassociatedTracks();
       void eraseOldSkeletonGroupFromBuffer();
 
-      std::vector<utils::StampedSkeleton> getLatestAvailableTracks() const;
       double computeMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
                                     const hiros::skeletons::types::Skeleton& t_detection) const;
       double computeOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
@@ -117,8 +113,6 @@ namespace hiros {
       bool unassociatedTrack(const unsigned int& t_track_idx) const;
 
       double computeAvgSrcTime(const std::vector<utils::StampedSkeleton>& t_skeletons) const;
-      void computeAvgTrack(const int& t_id);
-      void addToAvgTracks(const utils::StampedSkeleton& t_track);
 
       ros::NodeHandle m_nh;
       std::string m_node_namespace;
@@ -142,15 +136,8 @@ namespace hiros {
       cv::Mat_<int> m_munkres_matrix;
       int m_last_track_id;
 
-      // map<track_id, vector<skeleton_tracks>>
-      std::map<int, std::vector<utils::StampedSkeleton>> m_tracks_to_merge;
-
-      bool m_ok_to_publish;
-
       std::vector<utils::StampedSkeleton> m_detections{};
       std::vector<utils::StampedSkeleton> m_tracks{};
-      std::vector<utils::StampedSkeleton> m_avg_tracks{};
-      std::vector<utils::StampedSkeleton> m_prev_avg_tracks{};
 
       const double k_cutoff_frequency = 10; // [Hz]
       // map<track_id, filters>

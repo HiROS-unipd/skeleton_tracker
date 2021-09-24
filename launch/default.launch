@@ -10,8 +10,6 @@
   <arg name="in_skeleton_group_topics"        default="[]"    />
   <arg name="out_msg_topic_name"              default="track" />
 
-  <arg name="camera_frequency"                default="-1"    />
-
   <arg name="fixed_delay"                     default="0"     />
   <arg name="min_joints"                      default="0"     />
   <arg name="min_markers_distance"            default="-1"    />
@@ -35,8 +33,6 @@
 
     <rosparam param="in_skeleton_group_topics"    subst_value="True">$(arg in_skeleton_group_topics)  </rosparam>
     <param name="out_msg_topic_name"              type="str"    value="$(arg out_msg_topic_name)"              />
-
-    <param name="camera_frequency"                type="double" value="$(arg camera_frequency)"                />
 
     <param name="fixed_delay"                     type="double" value="$(arg fixed_delay)"                     />
     <param name="min_joints"                      type="int"    value="$(arg min_joints)"                      />
