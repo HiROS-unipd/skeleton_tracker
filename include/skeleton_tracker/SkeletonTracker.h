@@ -15,6 +15,7 @@
 
 // Custom Internal dependencies
 #include "skeleton_tracker/Buffer.h"
+#include "skeleton_tracker/Filter.h"
 #include "skeleton_tracker/Munkres.h"
 #include "skeleton_tracker/utils.h"
 
@@ -87,25 +88,25 @@ namespace hiros {
 
       std::vector<utils::StampedSkeleton> getLatestAvailableTracks() const;
       double computeMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                    hiros::skeletons::types::Skeleton& t_detection) const;
+                                    const hiros::skeletons::types::Skeleton& t_detection) const;
       double computeOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                         hiros::skeletons::types::Skeleton& t_detection) const;
+                                         const hiros::skeletons::types::Skeleton& t_detection) const;
       double computeWeightedMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                            hiros::skeletons::types::Skeleton& t_detection) const;
+                                            const hiros::skeletons::types::Skeleton& t_detection) const;
       double computeWeightedOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                                 hiros::skeletons::types::Skeleton& t_detection) const;
+                                                 const hiros::skeletons::types::Skeleton& t_detection) const;
       double computeWeightedDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                     hiros::skeletons::types::Skeleton& t_detection) const;
+                                     const hiros::skeletons::types::Skeleton& t_detection) const;
 
       void initializeVelAndAcc(utils::StampedSkeleton& t_skeleton) const;
       void computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
                             hiros::skeletons::types::Skeleton& t_detection,
                             const double& t_dt) const;
-      void computeVelocities(const hiros::skeletons::types::Skeleton& t_track,
-                             hiros::skeletons::types::Skeleton& t_detection,
-                             const double& t_dt) const;
       hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::Point& t_prev,
                                                         const hiros::skeletons::types::Point& t_curr,
+                                                        const double& t_dt) const;
+      hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::MIMU& t_prev,
+                                                        const hiros::skeletons::types::MIMU& t_curr,
                                                         const double& t_dt) const;
       hiros::skeletons::types::Acceleration computeAcceleration(const hiros::skeletons::types::Point& t_prev,
                                                                 const hiros::skeletons::types::Point& t_curr,
@@ -150,6 +151,10 @@ namespace hiros {
       std::vector<utils::StampedSkeleton> m_tracks{};
       std::vector<utils::StampedSkeleton> m_avg_tracks{};
       std::vector<utils::StampedSkeleton> m_prev_avg_tracks{};
+
+      const double k_cutoff_frequency = 10; // [Hz]
+      // map<track_id, filters>
+      std::map<int, Filter> m_track_filters;
 
       bool m_configured;
     };

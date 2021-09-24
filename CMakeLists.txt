@@ -9,6 +9,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp std_msgs hiros_skeleton_msgs)
 
 # System dependencies are found with CMake's conventions
 find_package(OpenCV)
+find_package(RTB_Filter)
 
 # Declare the package to be exported and made available to ros
 catkin_package(CATKIN_DEPENDS std_msgs hiros_skeleton_msgs)
@@ -19,7 +20,8 @@ catkin_package(CATKIN_DEPENDS std_msgs hiros_skeleton_msgs)
 # Specify additional locations of header files Your package locations should be
 # listed before other locations
 include_directories(include
-                    ${catkin_INCLUDE_DIRS})
+                    ${catkin_INCLUDE_DIRS}
+                    ${RTB_Filter_INCLUDE_DIRS})
 
 # Display additional files in qtcreator
 file(GLOB_RECURSE FILES_LIST "*.launch" "*.msg" "*.srv" "*.xml")
@@ -28,7 +30,7 @@ add_custom_target(additional_files_${PROJECT_NAME} SOURCES ${FILES_LIST})
 # Declare a C++ executable With catkin_make all packages are built within a
 # single CMake context The recommended prefix ensures that target names across
 # packages don't collide add_executable(${PROJECT_NAME}_node
-add_executable(${PROJECT_NAME}_node src/main.cpp src/Munkres.cpp
+add_executable(${PROJECT_NAME}_node src/main.cpp src/Filter.cpp src/Munkres.cpp
                src/SkeletonTracker.cpp src/utils.cpp)
 
 # Rename C++ executable without prefix The above recommended prefix causes long
