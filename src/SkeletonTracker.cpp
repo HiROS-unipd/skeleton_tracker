@@ -255,15 +255,15 @@ void hiros::track::SkeletonTracker::createCostMatrix()
 
   for (int track_idx = 0; track_idx < m_cost_matrix.rows; ++track_idx) {
     for (int det_idx = 0; det_idx < m_cost_matrix.cols; ++det_idx) {
+      auto predicted_track = utils::predict(m_tracks.at(static_cast<unsigned int>(track_idx)),
+                                            m_detections.at(static_cast<unsigned int>(det_idx)).src_time);
+
       m_markers_distance_matrix(track_idx, det_idx) =
-        computeMarkersDistance(m_tracks.at(static_cast<unsigned int>(track_idx)).skeleton,
-                               m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
-      m_orientations_distance_matrix(track_idx, det_idx) =
-        computeOrientationsDistance(m_tracks.at(static_cast<unsigned int>(track_idx)).skeleton,
-                                    m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
+        computeMarkersDistance(predicted_track.skeleton, m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
+      m_orientations_distance_matrix(track_idx, det_idx) = computeOrientationsDistance(
+        predicted_track.skeleton, m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
       m_cost_matrix(track_idx, det_idx) =
-        computeWeightedDistance(m_tracks.at(static_cast<unsigned int>(track_idx)).skeleton,
-                                m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
+        computeWeightedDistance(predicted_track.skeleton, m_detections.at(static_cast<unsigned int>(det_idx)).skeleton);
     }
   }
 }

@@ -40,6 +40,8 @@ namespace hiros {
       bool isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton);
       bool isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleton);
 
+      StampedSkeleton predict(const StampedSkeleton& t_track, const ros::Time& t_current_time);
+
       void merge(StampedSkeleton& t_s1,
                  const StampedSkeleton& t_s2,
                  const double& t_w1 = 1,

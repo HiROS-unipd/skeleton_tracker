@@ -115,6 +115,33 @@ bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleto
   return true;
 }
 
+hiros::track::utils::StampedSkeleton hiros::track::utils::predict(const hiros::track::utils::StampedSkeleton& t_track,
+                                                                  const ros::Time& t_current_time)
+{
+  double dt = (t_current_time - t_track.src_time).toSec();
+
+  auto pred_track = t_track;
+  pred_track.src_time = t_current_time;
+
+  for (auto& mg : pred_track.skeleton.marker_groups) {
+    for (auto& m : mg.markers) {
+      m.point.position += (dt * m.point.velocity);
+    }
+  }
+
+  tf2::Vector3 delta_theta;
+  tf2::Quaternion delta_q;
+  for (auto& og : pred_track.skeleton.orientation_groups) {
+    for (auto& o : og.orientations) {
+      delta_theta = dt * o.mimu.angular_velocity;
+      delta_q.setEuler(delta_theta.z(), delta_theta.y(), delta_theta.x()); // yaw, pitch, roll
+      o.mimu.orientation = delta_q * o.mimu.orientation;
+    }
+  }
+
+  return pred_track;
+}
+
 void hiros::track::utils::merge(StampedSkeleton& t_s1,
                                 const StampedSkeleton& t_s2,
                                 const double& t_w1,
