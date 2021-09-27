@@ -9,7 +9,6 @@ find_package(catkin REQUIRED COMPONENTS roscpp std_msgs hiros_skeleton_msgs)
 
 # System dependencies are found with CMake's conventions
 find_package(OpenCV)
-find_package(RTB_Filter)
 
 # Declare the package to be exported and made available to ros
 catkin_package(CATKIN_DEPENDS std_msgs hiros_skeleton_msgs)
@@ -20,8 +19,7 @@ catkin_package(CATKIN_DEPENDS std_msgs hiros_skeleton_msgs)
 # Specify additional locations of header files Your package locations should be
 # listed before other locations
 include_directories(include
-                    ${catkin_INCLUDE_DIRS}
-                    ${RTB_Filter_INCLUDE_DIRS})
+                    ${catkin_INCLUDE_DIRS})
 
 # Display additional files in qtcreator
 file(GLOB_RECURSE FILES_LIST "*.launch" "*.msg" "*.srv" "*.xml")

@@ -7,21 +7,56 @@
 // Internal dependencies
 #include "skeleton_tracker/Filter.h"
 
-void hiros::track::StateSpaceFilter3::filter(hiros::skeletons::types::Point& t_point,
-                                             const double& t_time,
-                                             const double& t_cutoff)
+void hiros::track::MarkerFilter::filter(hiros::skeletons::types::Point& t_point,
+                                        const double& t_time,
+                                        const double& t_cutoff)
 {
-  t_point.position.setX(filters[0].filter(t_point.position.x(), t_time, t_cutoff));
-  t_point.position.setY(filters[1].filter(t_point.position.y(), t_time, t_cutoff));
-  t_point.position.setZ(filters[2].filter(t_point.position.z(), t_time, t_cutoff));
+  auto prev_position = m_last_position;
+  auto prev_time = m_last_time;
 
-  t_point.velocity.setX(filters[0].getFilteredFirstDerivative());
-  t_point.velocity.setY(filters[1].getFilteredFirstDerivative());
-  t_point.velocity.setZ(filters[2].getFilteredFirstDerivative());
+  computePosition(t_point, t_time, t_cutoff);
+  computeVelocity(t_point, prev_position, prev_time, t_cutoff);
+}
 
-  t_point.acceleration.setX(filters[0].getFilteredSecondDerivative());
-  t_point.acceleration.setY(filters[1].getFilteredSecondDerivative());
-  t_point.acceleration.setZ(filters[2].getFilteredSecondDerivative());
+void hiros::track::MarkerFilter::computePosition(hiros::skeletons::types::Point& t_point,
+                                                 const double& t_time,
+                                                 const double& t_cutoff)
+{
+  // init
+  if (std::isnan(m_last_time)) {
+    m_last_time = t_time;
+    m_last_position = t_point.position;
+    m_last_velocity = std::isnan(t_point.velocity.x()) ? tf2::Vector3(0, 0, 0) : t_point.velocity;
+    return;
+  }
+
+  // filter
+  double weight = std::max(0., std::min((t_time - m_last_time) * t_cutoff, 1.));
+  m_last_position = m_last_position.lerp(t_point.position, weight);
+  t_point.position = m_last_position;
+  m_last_time = t_time;
+}
+
+void hiros::track::MarkerFilter::computeVelocity(hiros::skeletons::types::Point& t_point,
+                                                 const tf2::Vector3& t_prev_position,
+                                                 const double& t_prev_time,
+                                                 const double& t_cutoff)
+{
+  // init
+  if (std::isnan(t_prev_time)) {
+    t_point.velocity = tf2::Vector3(0, 0, 0);
+    return;
+  }
+
+  // compute linear velocities
+  double dt = m_last_time - t_prev_time;
+  auto curr_vel = (m_last_position - t_prev_position) / dt;
+
+  // filter
+  double weight = std::max(0., std::min(dt * t_cutoff, 1.));
+
+  m_last_velocity = m_last_velocity.lerp(curr_vel, weight);
+  t_point.velocity = m_last_velocity;
 }
 
 void hiros::track::OrientationFilter::filter(hiros::skeletons::types::MIMU& t_mimu,
@@ -32,7 +67,7 @@ void hiros::track::OrientationFilter::filter(hiros::skeletons::types::MIMU& t_mi
   auto prev_time = m_last_time;
 
   computeOrientation(t_mimu, t_time, t_cutoff);
-  computeVelocity(t_mimu, prev_orientation, prev_time);
+  computeVelocity(t_mimu, prev_orientation, prev_time, t_cutoff);
 }
 
 void hiros::track::OrientationFilter::computeOrientation(hiros::skeletons::types::MIMU& t_mimu,
@@ -56,7 +91,8 @@ void hiros::track::OrientationFilter::computeOrientation(hiros::skeletons::types
 
 void hiros::track::OrientationFilter::computeVelocity(hiros::skeletons::types::MIMU& t_mimu,
                                                       const tf2::Quaternion& t_prev_orientation,
-                                                      const double& t_prev_time)
+                                                      const double& t_prev_time,
+                                                      const double& t_cutoff)
 {
   // init
   if (std::isnan(t_prev_time)) {
@@ -66,16 +102,21 @@ void hiros::track::OrientationFilter::computeVelocity(hiros::skeletons::types::M
 
   // compute angular velocities
   double delta_roll, delta_pitch, delta_yaw;
+  tf2::Vector3 curr_vel;
   double dt = m_last_time - t_prev_time;
 
   tf2::Matrix3x3 m(m_last_orientation * t_prev_orientation.inverse());
   m.getEulerYPR(delta_yaw, delta_pitch, delta_roll);
 
-  t_mimu.angular_velocity.setX(delta_roll / dt);
-  t_mimu.angular_velocity.setY(delta_pitch / dt);
-  t_mimu.angular_velocity.setZ(delta_yaw / dt);
+  curr_vel.setX(delta_roll / dt);
+  curr_vel.setY(delta_pitch / dt);
+  curr_vel.setZ(delta_yaw / dt);
 
-  m_last_velocity = t_mimu.angular_velocity;
+  // filter
+  double weight = std::max(0., std::min(dt * t_cutoff, 1.));
+
+  m_last_velocity = m_last_velocity.lerp(curr_vel, weight);
+  t_mimu.angular_velocity = m_last_velocity;
 }
 
 hiros::track::Filter::Filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff)
@@ -88,7 +129,7 @@ void hiros::track::Filter::init(hiros::skeletons::types::Skeleton& t_skeleton, c
   if (!m_initialized) {
     for (auto& mkg : t_skeleton.marker_groups) {
       for (auto& mk : mkg.markers) {
-        m_marker_filters[mkg.id][mk.id] = StateSpaceFilter3();
+        m_marker_filters[mkg.id][mk.id] = MarkerFilter();
         m_marker_filters[mkg.id][mk.id].filter(mk.point, t_skeleton.src_time, t_cutoff);
       }
     }
@@ -137,7 +178,7 @@ void hiros::track::Filter::updateMarkerFilters(hiros::skeletons::types::Skeleton
     for (auto& mk : mkg.markers) {
       if (m_marker_filters[mkg.id].count(mk.id) == 0) {
         // new marker
-        m_marker_filters[mkg.id][mk.id] = StateSpaceFilter3();
+        m_marker_filters[mkg.id][mk.id] = MarkerFilter();
       }
       m_marker_filters[mkg.id][mk.id].filter(mk.point, t_skeleton.src_time, m_cutoff);
     }

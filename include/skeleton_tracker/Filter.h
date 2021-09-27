@@ -5,7 +5,6 @@
 #include <map>
 
 // Custom external dependencies
-#include "rtb/Filter/StateSpaceFilter.h"
 #include "skeletons/types.h"
 
 // Custom Internal dependencies
@@ -14,11 +13,21 @@
 namespace hiros {
   namespace track {
 
-    struct StateSpaceFilter3
+    class MarkerFilter
     {
+    public:
       void filter(hiros::skeletons::types::Point& t_point, const double& t_time, const double& t_cutoff);
 
-      std::array<rtb::Filter::StateSpaceFilter<double>, 3> filters;
+    private:
+      void computePosition(hiros::skeletons::types::Point& t_point, const double& t_time, const double& t_cutoff);
+      void computeVelocity(hiros::skeletons::types::Point& t_point,
+                           const tf2::Vector3& t_prev_position,
+                           const double& t_prev_time,
+                           const double& t_cutoff);
+
+      double m_last_time{std::numeric_limits<double>::quiet_NaN()};
+      tf2::Vector3 m_last_position{};
+      tf2::Vector3 m_last_velocity{};
     };
 
     class OrientationFilter
@@ -30,7 +39,8 @@ namespace hiros {
       void computeOrientation(hiros::skeletons::types::MIMU& t_mimu, const double& t_time, const double& t_cutoff);
       void computeVelocity(hiros::skeletons::types::MIMU& t_mimu,
                            const tf2::Quaternion& t_prev_orientation,
-                           const double& t_prev_time);
+                           const double& t_prev_time,
+                           const double& t_cutoff);
 
       double m_last_time{std::numeric_limits<double>::quiet_NaN()};
       tf2::Quaternion m_last_orientation{};
@@ -67,7 +77,7 @@ namespace hiros {
       void init(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff);
 
       // <marker_group_id, <marker_id, marker_filter>>
-      std::map<int, std::map<int, StateSpaceFilter3>> m_marker_filters{};
+      std::map<int, std::map<int, MarkerFilter>> m_marker_filters{};
       // <orientation_group_id, <orientation_id, orientation_filter>>
       std::map<int, std::map<int, OrientationFilter>> m_orientation_filters{};
 
