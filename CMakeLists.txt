@@ -31,7 +31,7 @@ add_custom_target(additional_files_${PROJECT_NAME} SOURCES ${FILES_LIST})
 # single CMake context The recommended prefix ensures that target names across
 # packages don't collide add_executable(${PROJECT_NAME}_node
 add_executable(${PROJECT_NAME}_node src/main.cpp src/Filter.cpp src/Munkres.cpp
-               src/SkeletonTracker.cpp src/utils.cpp)
+               src/SkeletonGroupBuffer.cpp src/SkeletonTracker.cpp src/utils.cpp)
 
 # Rename C++ executable without prefix The above recommended prefix causes long
 # target names, the following renames the target back to the shorter version for

@@ -74,25 +74,6 @@ bool hiros::track::utils::matchMunkres(const cv::Mat_<int>& t_munkres_matrix,
   return (t_munkres_matrix[static_cast<int>(t_row)][static_cast<int>(t_col)] == 1);
 }
 
-int hiros::track::utils::getSkeletonIndexFromId(const std::vector<StampedSkeleton>& t_vec, const int& t_id)
-{
-  for (unsigned int i = 0; i < t_vec.size(); ++i) {
-    if (t_vec.at(i).skeleton.id == t_id) {
-      return static_cast<int>(i);
-    }
-  }
-  return -1;
-}
-
-std::shared_ptr<hiros::track::utils::StampedSkeleton>
-hiros::track::utils::getSkeletonFromId(const std::vector<StampedSkeleton>& t_vec, const int& t_id)
-{
-  auto it =
-    std::find_if(t_vec.begin(), t_vec.end(), [&](const StampedSkeleton& elem) { return elem.skeleton.id == t_id; });
-
-  return it != t_vec.end() ? std::make_shared<StampedSkeleton>(*it) : nullptr;
-}
-
 bool hiros::track::utils::isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton)
 {
   return skeletons::utils::numberOfMarkers(t_skeleton) + skeletons::utils::numberOfOrientations(t_skeleton) == 0;
@@ -115,15 +96,15 @@ bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleto
   return true;
 }
 
-hiros::track::utils::StampedSkeleton hiros::track::utils::predict(const hiros::track::utils::StampedSkeleton& t_track,
-                                                                  const ros::Time& t_current_time)
+hiros::skeletons::types::Skeleton hiros::track::utils::predict(const hiros::skeletons::types::Skeleton& t_track,
+                                                               const double& t_current_time)
 {
-  double dt = (t_current_time - t_track.src_time).toSec();
+  double dt = t_current_time - t_track.src_time;
 
   auto pred_track = t_track;
   pred_track.src_time = t_current_time;
 
-  for (auto& mg : pred_track.skeleton.marker_groups) {
+  for (auto& mg : pred_track.marker_groups) {
     for (auto& m : mg.markers) {
       m.point.position += (dt * m.point.velocity);
     }
@@ -131,7 +112,7 @@ hiros::track::utils::StampedSkeleton hiros::track::utils::predict(const hiros::t
 
   tf2::Vector3 delta_theta;
   tf2::Quaternion delta_q;
-  for (auto& og : pred_track.skeleton.orientation_groups) {
+  for (auto& og : pred_track.orientation_groups) {
     for (auto& o : og.orientations) {
       delta_theta = dt * o.mimu.angular_velocity;
       delta_q.setEuler(delta_theta.z(), delta_theta.y(), delta_theta.x()); // yaw, pitch, roll
@@ -140,15 +121,6 @@ hiros::track::utils::StampedSkeleton hiros::track::utils::predict(const hiros::t
   }
 
   return pred_track;
-}
-
-void hiros::track::utils::merge(StampedSkeleton& t_s1,
-                                const StampedSkeleton& t_s2,
-                                const double& t_w1,
-                                const double& t_w2,
-                                const bool& t_weight_by_confidence)
-{
-  merge(t_s1.skeleton, t_s2.skeleton, t_w1, t_w2, t_weight_by_confidence);
 }
 
 void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1,
@@ -274,4 +246,61 @@ hiros::skeletons::types::Orientation hiros::track::utils::wavg(const skeletons::
   avg_or.mimu.magnetic_field = wavg(t_or1.mimu.magnetic_field, t_or2.mimu.magnetic_field, t_w1, t_w2);
 
   return avg_or;
+}
+
+ros::Time hiros::track::utils::avgSrcTime(const hiros::skeletons::types::SkeletonGroup& t_skel_group)
+{
+  if (t_skel_group.skeletons.empty()) {
+    return ros::Time();
+  }
+
+  double sum{0};
+  unsigned int n_elems{0};
+  for (const auto& skel : t_skel_group.skeletons) {
+    if (!isEmpty(skel)) {
+      sum += skel.src_time;
+      ++n_elems;
+    }
+  }
+
+  return ros::Time(sum / n_elems);
+}
+
+ros::Time hiros::track::utils::avgSrcTime(const hiros_skeleton_msgs::SkeletonGroup& t_skel_group)
+{
+  return avgSrcTime(hiros::skeletons::utils::toStruct(t_skel_group));
+}
+
+ros::Time hiros::track::utils::oldestSrcTime(const hiros::skeletons::types::SkeletonGroup& t_skel_group)
+{
+  if (t_skel_group.skeletons.empty()) {
+    return ros::Time();
+  }
+
+  return ros::Time(std::min_element(t_skel_group.skeletons.begin(),
+                                    t_skel_group.skeletons.end(),
+                                    [](const auto& lhs, const auto& rhs) { return lhs.src_time < rhs.src_time; })
+                     ->src_time);
+}
+
+ros::Time hiros::track::utils::oldestSrcTime(const hiros_skeleton_msgs::SkeletonGroup& t_skel_group)
+{
+  return oldestSrcTime(hiros::skeletons::utils::toStruct(t_skel_group));
+}
+
+ros::Time hiros::track::utils::newestSrcTime(const hiros::skeletons::types::SkeletonGroup& t_skel_group)
+{
+  if (t_skel_group.skeletons.empty()) {
+    return ros::Time();
+  }
+
+  return ros::Time(std::max_element(t_skel_group.skeletons.begin(),
+                                    t_skel_group.skeletons.end(),
+                                    [](const auto& lhs, const auto& rhs) { return lhs.src_time < rhs.src_time; })
+                     ->src_time);
+}
+
+ros::Time hiros::track::utils::newestSrcTime(const hiros_skeleton_msgs::SkeletonGroup& t_skel_group)
+{
+  return newestSrcTime(hiros::skeletons::utils::toStruct(t_skel_group));
 }

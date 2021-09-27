@@ -78,34 +78,25 @@ void hiros::track::OrientationFilter::computeVelocity(hiros::skeletons::types::M
   m_last_velocity = t_mimu.angular_velocity;
 }
 
-hiros::track::Filter::Filter(hiros::skeletons::types::Skeleton& t_skeleton,
-                             const double& t_time,
-                             const double& t_cutoff)
+hiros::track::Filter::Filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff)
 {
-  init(t_skeleton, t_time, t_cutoff);
+  init(t_skeleton, t_cutoff);
 }
 
-hiros::track::Filter::Filter(utils::StampedSkeleton& t_skeleton, const double& t_cutoff)
-{
-  init(t_skeleton.skeleton, t_skeleton.src_time.toSec(), t_cutoff);
-}
-
-void hiros::track::Filter::init(hiros::skeletons::types::Skeleton& t_skeleton,
-                                const double& t_time,
-                                const double& t_cutoff)
+void hiros::track::Filter::init(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff)
 {
   if (!m_initialized) {
     for (auto& mkg : t_skeleton.marker_groups) {
       for (auto& mk : mkg.markers) {
         m_marker_filters[mkg.id][mk.id] = StateSpaceFilter3();
-        m_marker_filters[mkg.id][mk.id].filter(mk.point, t_time, t_cutoff);
+        m_marker_filters[mkg.id][mk.id].filter(mk.point, t_skeleton.src_time, t_cutoff);
       }
     }
 
     for (auto& org : t_skeleton.orientation_groups) {
       for (auto& o : org.orientations) {
         m_orientation_filters[org.id][o.id] = OrientationFilter();
-        m_orientation_filters[org.id][o.id].filter(o.mimu, t_time, t_cutoff);
+        m_orientation_filters[org.id][o.id].filter(o.mimu, t_skeleton.src_time, t_cutoff);
       }
     }
 
@@ -114,7 +105,7 @@ void hiros::track::Filter::init(hiros::skeletons::types::Skeleton& t_skeleton,
   }
 }
 
-void hiros::track::Filter::updateMarkerFilters(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time)
+void hiros::track::Filter::updateMarkerFilters(hiros::skeletons::types::Skeleton& t_skeleton)
 {
   for (const auto& mkg : m_marker_filters) {
     auto mkg_id = mkg.first;
@@ -148,12 +139,12 @@ void hiros::track::Filter::updateMarkerFilters(hiros::skeletons::types::Skeleton
         // new marker
         m_marker_filters[mkg.id][mk.id] = StateSpaceFilter3();
       }
-      m_marker_filters[mkg.id][mk.id].filter(mk.point, t_time, m_cutoff);
+      m_marker_filters[mkg.id][mk.id].filter(mk.point, t_skeleton.src_time, m_cutoff);
     }
   }
 }
 
-void hiros::track::Filter::updateOrientationFilters(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_time)
+void hiros::track::Filter::updateOrientationFilters(hiros::skeletons::types::Skeleton& t_skeleton)
 {
   for (const auto& org : m_orientation_filters) {
     auto org_id = org.first;
@@ -187,51 +178,35 @@ void hiros::track::Filter::updateOrientationFilters(hiros::skeletons::types::Ske
         // new orientation
         m_orientation_filters[org.id][o.id] = OrientationFilter();
       }
-      m_orientation_filters[org.id][o.id].filter(o.mimu, t_time, m_cutoff);
+      m_orientation_filters[org.id][o.id].filter(o.mimu, t_skeleton.src_time, m_cutoff);
     }
   }
 }
 
-void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton,
-                                  const double& t_time,
-                                  const double& t_cutoff)
+void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff)
 {
   if (!m_initialized) {
     if (t_cutoff < 0 || std::isnan(t_cutoff)) {
       std::cerr << "hiros::track::Filter Warning: cutoff out of range. Must be in ]0, +inf[" << std::endl;
       return;
     }
-    init(t_skeleton, t_time, t_cutoff);
+    init(t_skeleton, t_cutoff);
   }
 
-  updateMarkerFilters(t_skeleton, t_time);
-  updateOrientationFilters(t_skeleton, t_time);
+  updateMarkerFilters(t_skeleton);
+  updateOrientationFilters(t_skeleton);
 }
 
-void hiros::track::Filter::filter(utils::StampedSkeleton& t_skeleton, const double& t_cutoff)
-{
-  filter(t_skeleton.skeleton, t_skeleton.src_time.toSec(), t_cutoff);
-}
-
-void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton,
-                                  const double& t_time,
-                                  const double& t_cutoff) const
+void hiros::track::Filter::filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff) const
 {
   auto tmp = *this;
-  tmp.filter(t_skeleton, t_time, t_cutoff);
+  tmp.filter(t_skeleton, t_cutoff);
 }
 
-void hiros::track::Filter::filter(utils::StampedSkeleton& t_skeleton, const double& t_cutoff) const
-{
-  filter(t_skeleton.skeleton, t_skeleton.src_time.toSec(), t_cutoff);
-}
-
-void hiros::track::Filter::updVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton,
-                                        const double& t_time,
-                                        const double& t_cutoff)
+void hiros::track::Filter::updVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff)
 {
   auto original_skel = t_skeleton;
-  filter(t_skeleton, t_time, t_cutoff);
+  filter(t_skeleton, t_cutoff);
 
   // reset marker positions to the values before filtering
   for (auto& mkg : t_skeleton.marker_groups) {
@@ -248,20 +223,8 @@ void hiros::track::Filter::updVelAndAcc(hiros::skeletons::types::Skeleton& t_ske
   }
 }
 
-void hiros::track::Filter::updVelAndAcc(utils::StampedSkeleton& t_skeleton, const double& t_cutoff)
-{
-  return updVelAndAcc(t_skeleton.skeleton, t_skeleton.src_time.toSec(), t_cutoff);
-}
-
-void hiros::track::Filter::updVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton,
-                                        const double& t_time,
-                                        const double& t_cutoff) const
+void hiros::track::Filter::updVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff) const
 {
   auto tmp = *this;
-  tmp.updVelAndAcc(t_skeleton, t_time, t_cutoff);
-}
-
-void hiros::track::Filter::updVelAndAcc(utils::StampedSkeleton& t_skeleton, const double& t_cutoff) const
-{
-  return updVelAndAcc(t_skeleton.skeleton, t_skeleton.src_time.toSec(), t_cutoff);
+  tmp.updVelAndAcc(t_skeleton, t_cutoff);
 }

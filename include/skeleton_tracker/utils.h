@@ -5,27 +5,12 @@
 #include "opencv2/opencv.hpp"
 
 // Custom External Packages dependencies
-#include "hiros_skeleton_msgs/Skeleton.h"
+#include "hiros_skeleton_msgs/SkeletonGroup.h"
 #include "skeletons/types.h"
 
 namespace hiros {
   namespace track {
     namespace utils {
-
-      struct StampedSkeleton
-      {
-        StampedSkeleton(const hiros::skeletons::types::Skeleton t_skeleton = {},
-                        const ros::Time& t_src_time = {},
-                        const std::string& t_src_frame = {})
-          : skeleton(t_skeleton)
-          , src_time(t_src_time)
-          , src_frame(t_src_frame)
-        {}
-
-        hiros::skeletons::types::Skeleton skeleton;
-        ros::Time src_time;
-        std::string src_frame;
-      };
 
       bool isNaN(const cv::Mat_<double>& t_mat);
       double min(const cv::Mat_<double>& t_mat);
@@ -34,21 +19,14 @@ namespace hiros {
 
       bool matchMunkres(const cv::Mat_<int>& t_munkres_matrix, const unsigned int& t_row, const unsigned int& t_col);
 
-      int getSkeletonIndexFromId(const std::vector<StampedSkeleton>& t_vec, const int& t_id);
-      std::shared_ptr<StampedSkeleton> getSkeletonFromId(const std::vector<StampedSkeleton>& t_vec, const int& t_id);
-
       bool isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton);
       bool isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleton);
 
-      StampedSkeleton predict(const StampedSkeleton& t_track, const ros::Time& t_current_time);
+      hiros::skeletons::types::Skeleton predict(const hiros::skeletons::types::Skeleton& t_track,
+                                                const double& t_current_time);
 
-      void merge(StampedSkeleton& t_s1,
-                 const StampedSkeleton& t_s2,
-                 const double& t_w1 = 1,
-                 const double& t_w2 = 1,
-                 const bool& t_weight_by_confidence = false);
-      void merge(hiros::skeletons::types::Skeleton& t_s1,
-                 const hiros::skeletons::types::Skeleton& t_s2,
+      void merge(hiros::skeletons::types::Skeleton& t_sk1,
+                 const hiros::skeletons::types::Skeleton& t_sk2,
                  const double& t_w1 = 1,
                  const double& t_w2 = 1,
                  const bool& t_weight_by_confidence = false);
@@ -76,6 +54,13 @@ namespace hiros {
                                                 const hiros::skeletons::types::Orientation& t_or2,
                                                 const double& t_w1 = 1,
                                                 const double& t_w2 = 1);
+
+      ros::Time avgSrcTime(const hiros::skeletons::types::SkeletonGroup& t_skel_group);
+      ros::Time avgSrcTime(const hiros_skeleton_msgs::SkeletonGroup& t_skel_group);
+      ros::Time oldestSrcTime(const hiros::skeletons::types::SkeletonGroup& t_skel_group);
+      ros::Time oldestSrcTime(const hiros_skeleton_msgs::SkeletonGroup& t_skel_group);
+      ros::Time newestSrcTime(const hiros::skeletons::types::SkeletonGroup& t_skel_group);
+      ros::Time newestSrcTime(const hiros_skeleton_msgs::SkeletonGroup& t_skel_group);
 
     } // namespace utils
   } // namespace track
