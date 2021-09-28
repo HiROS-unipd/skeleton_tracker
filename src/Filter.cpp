@@ -50,12 +50,15 @@ void hiros::track::MarkerFilter::computeVelocity(hiros::skeletons::types::Point&
 
   // compute linear velocities
   double dt = m_last_time - t_prev_time;
-  auto curr_vel = (m_last_position - t_prev_position) / dt;
 
-  // filter
-  double weight = std::max(0., std::min(dt * t_cutoff, 1.));
+  if (dt > 0) {
+    auto curr_vel = (m_last_position - t_prev_position) / dt;
 
-  m_last_velocity = m_last_velocity.lerp(curr_vel, weight);
+    // filter
+    double weight = std::max(0., std::min(dt * t_cutoff, 1.));
+    m_last_velocity = m_last_velocity.lerp(curr_vel, weight);
+  }
+
   t_point.velocity = m_last_velocity;
 }
 
@@ -105,17 +108,19 @@ void hiros::track::OrientationFilter::computeVelocity(hiros::skeletons::types::M
   tf2::Vector3 curr_vel;
   double dt = m_last_time - t_prev_time;
 
-  tf2::Matrix3x3 m(m_last_orientation * t_prev_orientation.inverse());
-  m.getEulerYPR(delta_yaw, delta_pitch, delta_roll);
+  if (dt > 0) {
+    tf2::Matrix3x3 m(m_last_orientation * t_prev_orientation.inverse());
+    m.getEulerYPR(delta_yaw, delta_pitch, delta_roll);
 
-  curr_vel.setX(delta_roll / dt);
-  curr_vel.setY(delta_pitch / dt);
-  curr_vel.setZ(delta_yaw / dt);
+    curr_vel.setX(delta_roll / dt);
+    curr_vel.setY(delta_pitch / dt);
+    curr_vel.setZ(delta_yaw / dt);
 
-  // filter
-  double weight = std::max(0., std::min(dt * t_cutoff, 1.));
+    // filter
+    double weight = std::max(0., std::min(dt * t_cutoff, 1.));
+    m_last_velocity = m_last_velocity.lerp(curr_vel, weight);
+  }
 
-  m_last_velocity = m_last_velocity.lerp(curr_vel, weight);
   t_mimu.angular_velocity = m_last_velocity;
 }
 
