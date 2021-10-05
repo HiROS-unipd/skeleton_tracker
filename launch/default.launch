@@ -11,16 +11,17 @@
   <arg name="out_msg_topic_name"              default="track" />
 
   <arg name="fixed_delay"                     default="0"     />
-  <arg name="min_joints"                      default="0"     />
-  <arg name="min_markers_distance"            default="-1"    />
-  <arg name="max_markers_distance"            default="-1"    />
-  <arg name="min_orientations_distance"       default="-1"    />
-  <arg name="max_orientations_distance"       default="-1"    />
+  <arg name="min_markers"                     default="0"     />
+  <arg name="min_links"                       default="0"     />
+  <arg name="min_linear_distance"             default="-1"    />
+  <arg name="max_linear_distance"             default="-1"    />
+  <arg name="min_angular_distance"            default="-1"    />
+  <arg name="max_angular_distance"            default="-1"    />
   <arg name="max_delta_t"                     default="0"     />
-  <arg name="use_markers"                     default="true"  />
-  <arg name="use_marker_velocities"           default="false" />
-  <arg name="use_orientations"                default="true"  />
-  <arg name="use_orientation_velocities"      default="false" />
+  <arg name="use_positions"                   default="true"  />
+  <arg name="use_linear_velocities"           default="false" />
+  <arg name="use_orientations"                default="false" />
+  <arg name="use_angular_velocities"          default="false" />
   <arg name="velocity_weight"                 default="0"     />
   <arg name="weight_distances_by_confidences" default="false" />
   <arg name="weight_distances_by_velocities"  default="false" />
@@ -35,16 +36,17 @@
     <param name="out_msg_topic_name"              type="str"    value="$(arg out_msg_topic_name)"              />
 
     <param name="fixed_delay"                     type="double" value="$(arg fixed_delay)"                     />
-    <param name="min_joints"                      type="int"    value="$(arg min_joints)"                      />
-    <param name="min_markers_distance"            type="double" value="$(arg min_markers_distance)"            />
-    <param name="max_markers_distance"            type="double" value="$(arg max_markers_distance)"            />
-    <param name="min_orientations_distance"       type="double" value="$(arg min_orientations_distance)"       />
-    <param name="max_orientations_distance"       type="double" value="$(arg max_orientations_distance)"       />
+    <param name="min_markers"                     type="int"    value="$(arg min_markers)"                     />
+    <param name="min_links"                       type="int"    value="$(arg min_links)"                       />
+    <param name="min_linear_distance"             type="double" value="$(arg min_linear_distance)"             />
+    <param name="max_linear_distance"             type="double" value="$(arg max_linear_distance)"             />
+    <param name="min_angular_distance"            type="double" value="$(arg min_angular_distance)"            />
+    <param name="max_angular_distance"            type="double" value="$(arg max_angular_distance)"            />
     <param name="max_delta_t"                     type="double" value="$(arg max_delta_t)"                     />
-    <param name="use_markers"                     type="bool"   value="$(arg use_markers)"                     />
-    <param name="use_marker_velocities"           type="bool"   value="$(arg use_marker_velocities)"           />
+    <param name="use_positions"                   type="bool"   value="$(arg use_positions)"                   />
+    <param name="use_linear_velocities"           type="bool"   value="$(arg use_linear_velocities)"           />
     <param name="use_orientations"                type="bool"   value="$(arg use_orientations)"                />
-    <param name="use_orientation_velocities"      type="bool"   value="$(arg use_orientation_velocities)"      />
+    <param name="use_angular_velocities"          type="bool"   value="$(arg use_angular_velocities)"          />
     <param name="velocity_weight"                 type="double" value="$(arg velocity_weight)"                 />
     <param name="weight_distances_by_confidences" type="bool"   value="$(arg weight_distances_by_confidences)" />
     <param name="weight_distances_by_velocities"  type="bool"   value="$(arg weight_distances_by_velocities)"  />

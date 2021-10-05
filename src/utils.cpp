@@ -76,19 +76,29 @@ bool hiros::track::utils::matchMunkres(const cv::Mat_<int>& t_munkres_matrix,
 
 bool hiros::track::utils::isEmpty(const hiros::skeletons::types::Skeleton& t_skeleton)
 {
-  return skeletons::utils::numberOfMarkers(t_skeleton) + skeletons::utils::numberOfOrientations(t_skeleton) == 0;
+  return (t_skeleton.markers.empty() && t_skeleton.links.empty());
 }
 
 bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleton)
 {
-  for (auto& mkg : t_skeleton.marker_groups) {
-    if (!mkg.markers.empty()) {
-      return false;
+  return (t_skeleton.markers.empty() && t_skeleton.links.empty());
+}
+
+bool hiros::track::utils::isEmpty(const hiros::skeletons::types::SkeletonGroup& t_skeleton_group)
+{
+  for (const auto& skeleton : t_skeleton_group.skeletons) {
+    if (!isEmpty(skeleton)) {
+      return true;
     }
   }
 
-  for (auto& org : t_skeleton.orientation_groups) {
-    if (!org.orientations.empty()) {
+  return false;
+}
+
+bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::SkeletonGroup& t_skeleton_group)
+{
+  for (const auto& skeleton : t_skeleton_group.skeletons) {
+    if (!isEmpty(skeleton)) {
       return false;
     }
   }
@@ -96,31 +106,35 @@ bool hiros::track::utils::isEmpty(const hiros_skeleton_msgs::Skeleton& t_skeleto
   return true;
 }
 
-hiros::skeletons::types::Skeleton hiros::track::utils::predict(const hiros::skeletons::types::Skeleton& t_track,
+hiros::skeletons::types::Skeleton hiros::track::utils::predict(const hiros::skeletons::types::Skeleton& t_skeleton,
                                                                const double& t_current_time)
 {
-  double dt = t_current_time - t_track.src_time;
-
-  auto pred_track = t_track;
-  pred_track.src_time = t_current_time;
-
-  for (auto& mg : pred_track.marker_groups) {
-    for (auto& m : mg.markers) {
-      m.point.position += (dt * m.point.velocity);
-    }
-  }
-
+  double dt = t_current_time - t_skeleton.src_time;
   tf2::Vector3 delta_theta;
   tf2::Quaternion delta_q;
-  for (auto& og : pred_track.orientation_groups) {
-    for (auto& o : og.orientations) {
-      delta_theta = dt * o.mimu.angular_velocity;
-      delta_q.setEuler(delta_theta.z(), delta_theta.y(), delta_theta.x()); // yaw, pitch, roll
-      o.mimu.orientation = delta_q * o.mimu.orientation;
-    }
+
+  auto pred_skel = t_skeleton;
+  pred_skel.src_time = t_current_time;
+
+  for (auto& m : pred_skel.markers) {
+    predict(m.center, dt);
   }
 
-  return pred_track;
+  for (auto& l : pred_skel.links) {
+    predict(l.center, dt);
+  }
+
+  return pred_skel;
+}
+
+void hiros::track::utils::predict(hiros::skeletons::types::KinematicState& t_state, const double& t_dt)
+{
+  t_state.pose.position += (t_dt * t_state.velocity.linear);
+
+  tf2::Quaternion delta_q;
+  auto delta_theta = t_dt * t_state.velocity.angular;
+  delta_q.setEuler(delta_theta.z(), delta_theta.y(), delta_theta.x()); // yaw, pitch, roll
+  t_state.pose.orientation = delta_q * t_state.pose.orientation;
 }
 
 void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1,
@@ -129,63 +143,53 @@ void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1,
                                 const double& t_w2,
                                 const bool& t_weight_by_confidence)
 {
-  for (auto& s2_mkg : t_s2.marker_groups) {
-    for (auto& s2_mk : s2_mkg.markers) {
-      merge(t_s1, s2_mkg, s2_mk, t_w1, t_w2, t_weight_by_confidence);
-    }
+  t_s1.src_time = wavg(t_s1.src_time, t_s2.src_time, t_w1, t_w2);
+
+  for (auto& s2_mk : t_s2.markers) {
+    merge(t_s1, s2_mk, t_w1, t_w2, t_weight_by_confidence);
   }
 
-  for (auto& s2_org : t_s2.orientation_groups) {
-    for (auto& s2_or : s2_org.orientations) {
-      merge(t_s1, s2_org, s2_or, t_w1, t_w2, t_weight_by_confidence);
-    }
+  for (auto& s2_lk : t_s2.links) {
+    merge(t_s1, s2_lk, t_w1, t_w2, t_weight_by_confidence);
   }
 }
 
 void hiros::track::utils::merge(skeletons::types::Skeleton& t_sk1,
-                                const skeletons::types::MarkerGroup& t_mkg2,
                                 const skeletons::types::Marker& t_mk2,
                                 const double& t_w1,
                                 const double& t_w2,
                                 const bool& t_weight_by_confidence)
 {
-  if (t_sk1.hasMarkerGroup(t_mkg2.id)) {
-    auto& mkg1 = t_sk1.getMarkerGroup(t_mkg2.id);
-    if (mkg1.hasMarker(t_mk2.id)) {
-      auto& mk1 = mkg1.getMarker(t_mk2.id);
-      mk1 = t_weight_by_confidence ? wavg(mk1, t_mk2, t_w1 * mk1.confidence, t_w2 * t_mk2.confidence)
-                                   : wavg(mk1, t_mk2, t_w1, t_w2);
-    }
-    else {
-      mkg1.addMarker(t_mk2);
-    }
+  if (t_sk1.hasMarker(t_mk2.id)) {
+    auto& mk1 = t_sk1.getMarker(t_mk2.id);
+    mk1 = t_weight_by_confidence ? wavg(mk1, t_mk2, t_w1 * mk1.confidence, t_w2 * t_mk2.confidence)
+                                 : wavg(mk1, t_mk2, t_w1, t_w2);
   }
   else {
-    t_sk1.addMarkerGroup(t_mkg2);
+    t_sk1.addMarker(t_mk2);
   }
 }
 
 void hiros::track::utils::merge(skeletons::types::Skeleton& t_sk1,
-                                const skeletons::types::OrientationGroup& t_org2,
-                                const skeletons::types::Orientation& t_or2,
+                                const skeletons::types::Link& t_lk2,
                                 const double& t_w1,
                                 const double& t_w2,
                                 const bool& t_weight_by_confidence)
 {
-  if (t_sk1.hasOrientationGroup(t_org2.id)) {
-    auto& org1 = t_sk1.getOrientationGroup(t_org2.id);
-    if (org1.hasOrientation(t_or2.id)) {
-      auto& or1 = org1.getOrientation(t_or2.id);
-      or1 = t_weight_by_confidence ? wavg(or1, t_or2, t_w1 * or1.confidence, t_w2 * t_or2.confidence)
-                                   : wavg(or1, t_or2, t_w1, t_w2);
-    }
-    else {
-      org1.addOrientation(t_or2);
-    }
+  if (t_sk1.hasLink(t_lk2.id)) {
+    auto& lk1 = t_sk1.getLink(t_lk2.id);
+    lk1 = t_weight_by_confidence ? wavg(lk1, t_lk2, t_w1 * lk1.confidence, t_w2 * t_lk2.confidence)
+                                 : wavg(lk1, t_lk2, t_w1, t_w2);
   }
   else {
-    t_sk1.addOrientationGroup(t_org2);
+    t_sk1.addLink(t_lk2);
   }
+}
+
+double hiros::track::utils::wavg(const double& t_e1, const double& t_e2, const double& t_w1, const double& t_w2)
+{
+  auto weight = (t_w1 + t_w2 != 0.) ? t_w2 / (t_w1 + t_w2) : 0.5;
+  return (1 - weight) * t_e1 + weight * t_e2;
 }
 
 tf2::Vector3
@@ -193,6 +197,32 @@ hiros::track::utils::wavg(const tf2::Vector3& t_v1, const tf2::Vector3& t_v2, co
 {
   auto weight = (t_w1 + t_w2 != 0.) ? t_w2 / (t_w1 + t_w2) : 0.5;
   return t_v1.lerp(t_v2, weight);
+}
+
+tf2::Quaternion hiros::track::utils::wavg(const tf2::Quaternion& t_q1,
+                                          const tf2::Quaternion& t_q2,
+                                          const double& t_w1,
+                                          const double& t_w2)
+{
+  auto weight = (t_w1 + t_w2 != 0.) ? t_w2 / (t_w1 + t_w2) : 0.5;
+  return t_q1.normalized().slerp(t_q2.normalized(), weight).normalize();
+}
+
+hiros::skeletons::types::KinematicState hiros::track::utils::wavg(const skeletons::types::KinematicState& t_ks1,
+                                                                  const skeletons::types::KinematicState& t_ks2,
+                                                                  const double& t_w1,
+                                                                  const double& t_w2)
+{
+  skeletons::types::KinematicState avg_ks;
+
+  avg_ks.pose.position = wavg(t_ks1.pose.position, t_ks2.pose.position, t_w1, t_w2);
+  avg_ks.pose.orientation = wavg(t_ks1.pose.orientation, t_ks2.pose.orientation, t_w1, t_w2);
+  avg_ks.velocity.linear = wavg(t_ks1.velocity.linear, t_ks2.velocity.linear, t_w1, t_w2);
+  avg_ks.velocity.angular = wavg(t_ks1.velocity.angular, t_ks2.velocity.angular, t_w1, t_w2);
+  avg_ks.acceleration.linear = wavg(t_ks1.acceleration.linear, t_ks2.acceleration.linear, t_w1, t_w2);
+  avg_ks.acceleration.angular = wavg(t_ks1.acceleration.angular, t_ks2.acceleration.angular, t_w1, t_w2);
+
+  return avg_ks;
 }
 
 hiros::skeletons::types::Marker hiros::track::utils::wavg(const skeletons::types::Marker& t_mk1,
@@ -205,47 +235,30 @@ hiros::skeletons::types::Marker hiros::track::utils::wavg(const skeletons::types
     return skeletons::types::Marker();
   }
 
-  skeletons::types::Marker avg_mk;
+  skeletons::types::Marker avg_mk(t_mk1);
 
-  avg_mk.id = t_mk1.id;
   avg_mk.confidence = (t_w1 + t_w2 != 0.) ? (t_w1 * t_mk1.confidence + t_w2 * t_mk2.confidence) / (t_w1 + t_w2) : 0.;
-  avg_mk.point.position = wavg(t_mk1.point.position, t_mk2.point.position, t_w1, t_w2);
-  avg_mk.point.velocity = wavg(t_mk1.point.velocity, t_mk2.point.velocity, t_w1, t_w2);
-  avg_mk.point.acceleration = wavg(t_mk1.point.acceleration, t_mk2.point.acceleration, t_w1, t_w2);
+  avg_mk.center = wavg(t_mk1.center, t_mk2.center, t_w1, t_w2);
 
   return avg_mk;
 }
 
-tf2::Quaternion hiros::track::utils::wavg(const tf2::Quaternion& t_q1,
-                                          const tf2::Quaternion& t_q2,
-                                          const double& t_w1,
-                                          const double& t_w2)
+hiros::skeletons::types::Link hiros::track::utils::wavg(const skeletons::types::Link& t_lk1,
+                                                        const skeletons::types::Link& t_lk2,
+                                                        const double& t_w1,
+                                                        const double& t_w2)
 {
-  auto weight = (t_w1 + t_w2 != 0.) ? t_w2 / (t_w1 + t_w2) : 0.5;
-  return t_q1.normalized().slerp(t_q2.normalized(), weight).normalize();
-}
-
-hiros::skeletons::types::Orientation hiros::track::utils::wavg(const skeletons::types::Orientation& t_or1,
-                                                               const skeletons::types::Orientation& t_or2,
-                                                               const double& t_w1,
-                                                               const double& t_w2)
-{
-  if (t_or1.id != t_or2.id) {
-    std::cerr << "Warning: trying to average different orientations" << std::endl;
-    return skeletons::types::Orientation();
+  if (t_lk1.id != t_lk2.id) {
+    std::cerr << "Warning: trying to average different links" << std::endl;
+    return skeletons::types::Link();
   }
 
-  skeletons::types::Orientation avg_or;
+  skeletons::types::Link avg_lk(t_lk1);
 
-  avg_or.id = t_or1.id;
-  avg_or.confidence = (t_w1 + t_w2 != 0.) ? (t_w1 * t_or1.confidence + t_w2 * t_or2.confidence) / (t_w1 + t_w2) : 0.;
-  avg_or.mimu.frame_id = t_or1.mimu.frame_id;
-  avg_or.mimu.orientation = wavg(t_or1.mimu.orientation, t_or2.mimu.orientation, t_w1, t_w2);
-  avg_or.mimu.angular_velocity = wavg(t_or1.mimu.angular_velocity, t_or2.mimu.angular_velocity, t_w1, t_w2);
-  avg_or.mimu.linear_acceleration = wavg(t_or1.mimu.linear_acceleration, t_or2.mimu.linear_acceleration, t_w1, t_w2);
-  avg_or.mimu.magnetic_field = wavg(t_or1.mimu.magnetic_field, t_or2.mimu.magnetic_field, t_w1, t_w2);
+  avg_lk.confidence = (t_w1 + t_w2 != 0.) ? (t_w1 * t_lk1.confidence + t_w2 * t_lk2.confidence) / (t_w1 + t_w2) : 0.;
+  avg_lk.center = wavg(t_lk1.center, t_lk2.center, t_w1, t_w2);
 
-  return avg_or;
+  return avg_lk;
 }
 
 ros::Time hiros::track::utils::avgSrcTime(const hiros::skeletons::types::SkeletonGroup& t_skel_group)
@@ -257,10 +270,8 @@ ros::Time hiros::track::utils::avgSrcTime(const hiros::skeletons::types::Skeleto
   double sum{0};
   unsigned int n_elems{0};
   for (const auto& skel : t_skel_group.skeletons) {
-    if (!isEmpty(skel)) {
-      sum += skel.src_time;
-      ++n_elems;
-    }
+    sum += skel.src_time;
+    ++n_elems;
   }
 
   return ros::Time(sum / n_elems);

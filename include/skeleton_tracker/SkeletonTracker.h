@@ -33,16 +33,17 @@ namespace hiros {
       std::string out_msg_topic_name;
 
       ros::Duration fixed_delay;
-      int min_joints;
-      double min_markers_distance;
-      double max_markers_distance;
-      double min_orientations_distance;
-      double max_orientations_distance;
+      int min_markers;
+      int min_links;
+      double min_linear_distance;
+      double max_linear_distance;
+      double min_angular_distance;
+      double max_angular_distance;
       ros::Duration max_delta_t;
-      bool use_markers;
-      bool use_marker_velocities;
+      bool use_positions;
+      bool use_linear_velocities;
       bool use_orientations;
-      bool use_orientation_velocities;
+      bool use_angular_velocities;
       double velocity_weight;
       bool weight_distances_by_confidences;
       bool weight_distances_by_velocities;
@@ -79,30 +80,50 @@ namespace hiros {
       void removeUnassociatedTracks();
       void eraseOldSkeletonGroupFromBuffer();
 
-      double computeMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                    const hiros::skeletons::types::Skeleton& t_detection) const;
-      double computeOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                         const hiros::skeletons::types::Skeleton& t_detection) const;
-      double computeWeightedMarkersDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                            const hiros::skeletons::types::Skeleton& t_detection) const;
-      double computeWeightedOrientationsDistance(const hiros::skeletons::types::Skeleton& t_track,
-                                                 const hiros::skeletons::types::Skeleton& t_detection) const;
+      double computeWeight(const double& t_det_confidence, const hiros::skeletons::types::Vector3& t_track_vel) const;
+      double computeLinPosDistance(const hiros::skeletons::types::KinematicState& t_det_ks,
+                                   const hiros::skeletons::types::KinematicState& t_track_ks,
+                                   const double& t_weight = 1) const;
+      double computeLinVelDistance(const hiros::skeletons::types::KinematicState& t_det_ks,
+                                   const hiros::skeletons::types::KinematicState& t_track_ks,
+                                   const double& t_weight = 1) const;
+      double computeAngPosDistance(const hiros::skeletons::types::KinematicState& t_det_ks,
+                                   const hiros::skeletons::types::KinematicState& t_track_ks,
+                                   const double& t_weight = 1) const;
+      double computeAngVelDistance(const hiros::skeletons::types::KinematicState& t_det_ks,
+                                   const hiros::skeletons::types::KinematicState& t_track_ks,
+                                   const double& t_weight = 1) const;
+      double computeMeanDistance(const std::vector<double>& t_pos_dist,
+                                 const std::vector<double>& t_vel_dist = std::vector<double>(),
+                                 const bool& t_weighted = false) const;
+
+      double computeMarkersLinDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                       const hiros::skeletons::types::Skeleton& t_detection,
+                                       const bool& t_weighted = false) const;
+      double computeMarkersAngDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                       const hiros::skeletons::types::Skeleton& t_detection,
+                                       const bool& t_weighted = false) const;
+
+      double computeLinksLinDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                     const hiros::skeletons::types::Skeleton& t_detection,
+                                     const bool& t_weighted = false) const;
+      double computeLinksAngDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                     const hiros::skeletons::types::Skeleton& t_detection,
+                                     const bool& t_weighted = false) const;
+
+      double computeLinearDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                   const hiros::skeletons::types::Skeleton& t_detection,
+                                   const bool& t_weighted = false) const;
+      double computeAngularDistance(const hiros::skeletons::types::Skeleton& t_track,
+                                    const hiros::skeletons::types::Skeleton& t_detection,
+                                    const bool& t_weighted = false) const;
+
       double computeWeightedDistance(const hiros::skeletons::types::Skeleton& t_track,
                                      const hiros::skeletons::types::Skeleton& t_detection) const;
 
       void initializeVelAndAcc(hiros::skeletons::types::Skeleton& t_skeleton) const;
-      void computeVelAndAcc(const hiros::skeletons::types::Skeleton& t_track,
-                            hiros::skeletons::types::Skeleton& t_detection,
-                            const double& t_dt) const;
-      hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::Point& t_prev,
-                                                        const hiros::skeletons::types::Point& t_curr,
-                                                        const double& t_dt) const;
-      hiros::skeletons::types::Velocity computeVelocity(const hiros::skeletons::types::MIMU& t_prev,
-                                                        const hiros::skeletons::types::MIMU& t_curr,
-                                                        const double& t_dt) const;
-      hiros::skeletons::types::Acceleration computeAcceleration(const hiros::skeletons::types::Point& t_prev,
-                                                                const hiros::skeletons::types::Point& t_curr,
-                                                                const double& t_dt) const;
+      void initializeVelAndAcc(hiros::skeletons::types::KinematicState& t_state) const;
+
       void updateDetectedTrack(const unsigned int& t_track_idx, const unsigned int& t_det_idx);
       void addNewTrack(const hiros::skeletons::types::Skeleton& t_detection);
       bool unassociatedDetection(const unsigned int& t_det_idx) const;
@@ -117,14 +138,14 @@ namespace hiros {
       std::vector<ros::Subscriber> m_in_skeleton_group_subs;
       ros::Publisher m_out_msg_pub;
 
-      // vector<pair<src_frame, frame_id>>
+      // map<src_frame, frame_id>
       std::map<std::string, std::string> m_received_frames;
 
       SkeletonGroupBuffer m_skeleton_group_buffer;
 
       Munkres m_munkres;
-      cv::Mat_<double> m_markers_distance_matrix;
-      cv::Mat_<double> m_orientations_distance_matrix;
+      cv::Mat_<double> m_linear_distance_matrix;
+      cv::Mat_<double> m_angular_distance_matrix;
       cv::Mat_<double> m_cost_matrix;
       cv::Mat_<int> m_munkres_matrix;
       int m_last_track_id;
@@ -133,7 +154,7 @@ namespace hiros {
       hiros::skeletons::types::SkeletonGroup m_tracks{};
 
       const double k_cutoff_frequency = 10; // [Hz]
-      // map<track_id, filters>
+      // map<track_id, filter>
       std::map<int, Filter> m_track_filters;
 
       bool m_configured;

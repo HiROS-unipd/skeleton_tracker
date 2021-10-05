@@ -18,7 +18,9 @@ bool hiros::track::SkeletonGroupBuffer::empty() const
 
 void hiros::track::SkeletonGroupBuffer::push_back(const hiros_skeleton_msgs::SkeletonGroup& t_msg)
 {
-  m_buffer.emplace(utils::avgSrcTime(t_msg), t_msg);
+  if (!utils::isEmpty(t_msg)) {
+    m_buffer.emplace(utils::avgSrcTime(t_msg), t_msg);
+  }
 }
 
 void hiros::track::SkeletonGroupBuffer::pop_front()

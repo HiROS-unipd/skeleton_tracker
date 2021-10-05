@@ -28,19 +28,19 @@ roslaunch hiros_skeleton_tracker custom_configuration_example.launch
 | `node_name`                       | Node's name                                                  |
 | `in_skeleton_group_topics`        | Topics published by all the detectors in the network         |
 | `out_msg_topic_name`              | Name of the topic that will be published containing the tracked skeletons |
-| `camera_frequency`                | Frame rate of the cameras being used (optional)              |
 | `fixed_delay`                     | Fixed delay to apply before tracking a detection (avoid possible source time inconsistencies when using multiple detectors) |
-| `min_joints`                      | Minimum number of markers and/or orientations to be detected to begin tracking |
-| `min_markers_distance`            | If the distance between an unassociated detection and a track is lower than this parameter, then the detection is considered as part of the track |
-| `max_markers_distance`            | Maximum acceptable distance between track and detection      |
-| `min_orientations_distance`       | If the distance between an unassociated detection and a track is lower than this parameter, then the detection is considered as part of the track |
-| `max_orientations_distance`       | Maximum acceptable distance between track and detection      |
+| `min_markers`                     | Minimum number of markers to be detected to begin tracking   |
+| `min_links`                       | Minimum number of links to be detected to begin tracking     |
+| `min_linear_distance`             | If the linear distance between an unassociated detection and a track is lower than this parameter, then the detection is considered as part of the track |
+| `max_linear_distance`             | Maximum acceptable linear distance between track and detection |
+| `min_angular_distance`            | If the angular distance between an unassociated detection and a track is lower than this parameter, then the detection is considered as part of the track |
+| `max_angular_distance`            | Maximum acceptable angular distance between track and detection |
 | `max_delta_t`                     | Maximum acceptable time delta between track and detection    |
-| `use_markers`                     | Calculate distances based on the markers' positions          |
-| `use_markers_velocities`          | Calculate distances based on the markers' velocities         |
-| `use_orientations`                | Calculate distances based on the orientations                |
-| `use_orientations_velocities`     | Calculate distances based on the angular velocities          |
+| `use_positions`                   | Calculate distances based on the markers/links positions     |
+| `use_linear_velocities`           | Calculate distances based on the markers/links linear velocities |
+| `use_orientations`                | Calculate distances based on the markers/links orientations  |
+| `use_angular_velocities`          | Calculate distances based on the markers/links angular velocities |
 | `velocity_weight`                 | Constant weight to apply to the distance calculated on the velocities |
-| `weight_distances_by_confidences` | Weight the distance of each pair of markers/orientations w.r.t. the detection's confidence |
-| `weight_distances_by_velocities`  | Weight the distance of each pair of markers/orientations w.r.t. the inverse of the track's velocity |
+| `weight_distances_by_confidences` | Weight the distance of each pair of markers/links w.r.t. the detection's confidence |
+| `weight_distances_by_velocities`  | Weight the distance of each pair of markers/links w.r.t. the inverse of the track's velocity |
 

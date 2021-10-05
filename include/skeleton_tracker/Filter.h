@@ -13,38 +13,26 @@
 namespace hiros {
   namespace track {
 
-    class MarkerFilter
+    class KinematicStateFilter
     {
     public:
-      void filter(hiros::skeletons::types::Point& t_point, const double& t_time, const double& t_cutoff);
+      void filter(hiros::skeletons::types::KinematicState& t_state, const double& t_time, const double& t_cutoff);
 
     private:
-      void computePosition(hiros::skeletons::types::Point& t_point, const double& t_time, const double& t_cutoff);
-      void computeVelocity(hiros::skeletons::types::Point& t_point,
-                           const tf2::Vector3& t_prev_position,
+      void computePose(hiros::skeletons::types::KinematicState& t_state, const double& t_time, const double& t_cutoff);
+
+      void computeVelocity(hiros::skeletons::types::KinematicState& t_state,
+                           const hiros::skeletons::types::KinematicState& t_prev_state,
                            const double& t_prev_time,
                            const double& t_cutoff);
 
-      double m_last_time{std::numeric_limits<double>::quiet_NaN()};
-      tf2::Vector3 m_last_position{};
-      tf2::Vector3 m_last_velocity{};
-    };
-
-    class OrientationFilter
-    {
-    public:
-      void filter(hiros::skeletons::types::MIMU& t_mimu, const double& t_time, const double& t_cutoff);
-
-    private:
-      void computeOrientation(hiros::skeletons::types::MIMU& t_mimu, const double& t_time, const double& t_cutoff);
-      void computeVelocity(hiros::skeletons::types::MIMU& t_mimu,
-                           const tf2::Quaternion& t_prev_orientation,
-                           const double& t_prev_time,
-                           const double& t_cutoff);
+      void computeAcceleration(hiros::skeletons::types::KinematicState& t_state,
+                               const hiros::skeletons::types::KinematicState& t_prev_state,
+                               const double& t_prev_time,
+                               const double& t_cutoff);
 
       double m_last_time{std::numeric_limits<double>::quiet_NaN()};
-      tf2::Quaternion m_last_orientation{};
-      tf2::Vector3 m_last_velocity{};
+      hiros::skeletons::types::KinematicState m_last_state{};
     };
 
     class Filter
@@ -53,9 +41,6 @@ namespace hiros {
       Filter() {}
       Filter(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff);
       ~Filter() {}
-
-      void updateMarkerFilters(hiros::skeletons::types::Skeleton& t_skeleton);
-      void updateOrientationFilters(hiros::skeletons::types::Skeleton& t_skeleton);
 
       // Get filtered value and update the filter's internal state
       void filter(hiros::skeletons::types::Skeleton& t_skeleton,
@@ -76,10 +61,13 @@ namespace hiros {
     private:
       void init(hiros::skeletons::types::Skeleton& t_skeleton, const double& t_cutoff);
 
-      // <marker_group_id, <marker_id, marker_filter>>
-      std::map<int, std::map<int, MarkerFilter>> m_marker_filters{};
-      // <orientation_group_id, <orientation_id, orientation_filter>>
-      std::map<int, std::map<int, OrientationFilter>> m_orientation_filters{};
+      void updateMarkerFilters(hiros::skeletons::types::Skeleton& t_skeleton);
+      void updateLinkFilters(hiros::skeletons::types::Skeleton& t_skeleton);
+
+      // <marker_id, marker_filter>
+      std::map<int, KinematicStateFilter> m_marker_filters{};
+      // <link_id, link_filter>
+      std::map<int, KinematicStateFilter> m_link_filters{};
 
       double m_cutoff{};
       bool m_initialized{false};
