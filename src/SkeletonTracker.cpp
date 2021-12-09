@@ -25,7 +25,7 @@ hiros::track::SkeletonTracker::~SkeletonTracker() {}
 
 void hiros::track::SkeletonTracker::configure()
 {
-  ROS_INFO_STREAM("Hi-ROS Skeleton Tracker...Configuring");
+  ROS_INFO_STREAM("Hi-ROS Skeleton Tracker... Configuring");
 
   if (m_configured) {
     m_configured = false;
@@ -37,7 +37,7 @@ void hiros::track::SkeletonTracker::configure()
   m_nh.getParam("out_msg_topic_name", m_params.out_msg_topic_name);
 
   if (m_params.in_skeleton_group_topics.empty() || m_params.out_msg_topic_name.empty()) {
-    ROS_FATAL_STREAM("Required topics configuration not provided. Unable to continue");
+    ROS_FATAL_STREAM("Hi-ROS Skeleton Tracker Error: Required topics configuration not provided. Unable to continue");
     ros::shutdown();
   }
 
@@ -79,31 +79,32 @@ void hiros::track::SkeletonTracker::configure()
 
   if (!m_params.use_positions && !m_params.use_orientations && !m_params.use_linear_velocities
       && !m_params.use_angular_velocities) {
-    ROS_FATAL_STREAM("Linear/angular distances and/or velocity based distances must be enabled. Unable to continue");
+    ROS_FATAL_STREAM("Hi-ROS Skeleton Tracker Error: Linear/angular distances and/or velocity based distances must be "
+                     "enabled. Unable to continue");
     ros::shutdown();
   }
 
   setupRosTopics();
 
   m_configured = true;
-  ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...CONFIGURED" << BASH_MSG_RESET);
+  ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker... CONFIGURED" << BASH_MSG_RESET);
 }
 
 void hiros::track::SkeletonTracker::start()
 {
-  ROS_INFO_STREAM("Hi-ROS Skeleton Tracker...Starting");
+  ROS_INFO_STREAM("Hi-ROS Skeleton Tracker... Starting");
 
   if (!m_configured) {
     configure();
   }
 
-  ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...RUNNING" << BASH_MSG_RESET);
+  ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker... RUNNING" << BASH_MSG_RESET);
   ros::spin();
 }
 
 void hiros::track::SkeletonTracker::stop()
 {
-  ROS_INFO_STREAM("Hi-ROS Skeleton Tracker...Stopping");
+  ROS_INFO_STREAM("Hi-ROS Skeleton Tracker... Stopping");
 
   if (!m_in_skeleton_group_subs.empty()) {
     for (auto& sub : m_in_skeleton_group_subs)
@@ -114,7 +115,7 @@ void hiros::track::SkeletonTracker::stop()
     m_out_msg_pub.shutdown();
   }
 
-  ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...STOPPED" << BASH_MSG_RESET);
+  ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker... STOPPED" << BASH_MSG_RESET);
   ros::shutdown();
 }
 
@@ -126,7 +127,8 @@ void hiros::track::SkeletonTracker::setupRosTopics()
 
   for (const auto& sub : m_in_skeleton_group_subs) {
     while (sub.getNumPublishers() == 0 && !ros::isShuttingDown()) {
-      ROS_WARN_STREAM_THROTTLE(2, m_node_namespace << " No input messages on skeleton group topic(s)");
+      ROS_WARN_STREAM_DELAYED_THROTTLE(2,
+                                       "Hi-ROS Skeleton Tracker Warning: No input messages on skeleton group topic(s)");
     }
   }
 
@@ -165,7 +167,7 @@ void hiros::track::SkeletonTracker::checkFrameIdConsistency(
     if (std::find_if(
           m_received_frames.begin(), m_received_frames.end(), [&](const auto& e) { return e.second != m_tracks.frame; })
         != m_received_frames.end()) {
-      ROS_FATAL_STREAM("Error. Data must be expressed w.r.t the same reference frame");
+      ROS_FATAL_STREAM("Hi-ROS Skeleton Tracker Error: Data must be expressed w.r.t the same reference frame");
       ros::shutdown();
       exit(EXIT_FAILURE);
     }
