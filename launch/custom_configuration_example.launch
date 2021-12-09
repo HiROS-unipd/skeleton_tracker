@@ -12,6 +12,8 @@
     <arg name="out_msg_topic_name"              value="skeleton_group"     />
 
     <arg name="fixed_delay"                     value="0.1"                />
+    <arg name="min_marker_confidence"           value="0.3"                />
+    <arg name="min_link_confidence"             value="0.3"                />
     <arg name="min_markers"                     value="7"                  />
     <arg name="min_links"                       value="7"                  />
     <arg name="min_linear_distance"             value="0.5"                />

@@ -46,6 +46,9 @@ void hiros::track::SkeletonTracker::configure()
 
   m_nh.getParam("fixed_delay", fixed_delay);
   m_params.fixed_delay = ros::Duration(fixed_delay);
+  m_nh.getParam("min_skeleton_confidence", m_params.min_skeleton_confidence);
+  m_nh.getParam("min_marker_confidence", m_params.min_marker_confidence);
+  m_nh.getParam("min_link_confidence", m_params.min_link_confidence);
   m_nh.getParam("min_markers", m_params.min_markers);
   m_nh.getParam("min_links", m_params.min_links);
   m_nh.getParam("min_linear_distance", m_params.min_linear_distance);
@@ -166,7 +169,7 @@ void hiros::track::SkeletonTracker::checkFrameIdConsistency(
 void hiros::track::SkeletonTracker::addNewSkeletonGroupToBuffer(
   const hiros_skeleton_msgs::SkeletonGroup& t_skeleton_group_msg)
 {
-  m_skeleton_group_buffer.push_back(t_skeleton_group_msg);
+  m_skeleton_group_buffer.push_back(filterByConfidence(t_skeleton_group_msg));
 }
 
 void hiros::track::SkeletonTracker::trackOldestFrame()
@@ -178,6 +181,12 @@ void hiros::track::SkeletonTracker::trackOldestFrame()
   updateDetectedTracks();
   addNewTracks();
   removeUnassociatedTracks();
+}
+
+void hiros::track::SkeletonTracker::publishTracks()
+{
+  m_tracks.time = ros::Time::now().toSec();
+  m_out_msg_pub.publish(skeletons::utils::toMsg(m_tracks));
 }
 
 ros::Time hiros::track::SkeletonTracker::getPreviousSrcTime() const
@@ -201,10 +210,40 @@ ros::Time hiros::track::SkeletonTracker::getCurrentSrcTime() const
   return ros::Time();
 }
 
-void hiros::track::SkeletonTracker::publishTracks()
+hiros_skeleton_msgs::SkeletonGroup
+hiros::track::SkeletonTracker::filterByConfidence(const hiros_skeleton_msgs::SkeletonGroup& t_skeleton_group_msg) const
 {
-  m_tracks.time = ros::Time::now().toSec();
-  m_out_msg_pub.publish(skeletons::utils::toMsg(m_tracks));
+  hiros_skeleton_msgs::SkeletonGroup filtered_skeleton_group = t_skeleton_group_msg;
+
+  // Remove skeletons with confidence < min_skeleton_confidence
+  filtered_skeleton_group.skeletons.erase(
+    std::remove_if(
+      filtered_skeleton_group.skeletons.begin(),
+      filtered_skeleton_group.skeletons.end(),
+      [&](auto& skel) { return (skel.confidence >= 0 && skel.confidence < m_params.min_skeleton_confidence); }),
+    filtered_skeleton_group.skeletons.end());
+
+  // Remove markers with confidence < min_marker_confidence
+  for (auto& skel : filtered_skeleton_group.skeletons) {
+    skel.markers.erase(std::remove_if(skel.markers.begin(),
+                                      skel.markers.end(),
+                                      [&](const auto& mk) {
+                                        return (mk.confidence >= 0 && mk.confidence < m_params.min_marker_confidence);
+                                      }),
+                       skel.markers.end());
+  }
+
+  // Remove links with confidence < min_link_confidence
+  for (auto& skel : filtered_skeleton_group.skeletons) {
+    skel.links.erase(std::remove_if(skel.links.begin(),
+                                    skel.links.end(),
+                                    [&](const auto& lk) {
+                                      return (lk.confidence >= 0 && lk.confidence < m_params.min_link_confidence);
+                                    }),
+                     skel.links.end());
+  }
+
+  return filtered_skeleton_group;
 }
 
 void hiros::track::SkeletonTracker::fillDetections()

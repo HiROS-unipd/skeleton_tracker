@@ -33,6 +33,9 @@ namespace hiros {
       std::string out_msg_topic_name;
 
       ros::Duration fixed_delay;
+      double min_skeleton_confidence;
+      double min_marker_confidence;
+      double min_link_confidence;
       int min_markers;
       int min_links;
       double min_linear_distance;
@@ -66,10 +69,12 @@ namespace hiros {
       void checkFrameIdConsistency(const hiros_skeleton_msgs::SkeletonGroup& t_skeleton_group_msg);
       void addNewSkeletonGroupToBuffer(const hiros_skeleton_msgs::SkeletonGroup& t_skeleton_group_msg);
       void trackOldestFrame();
+      void publishTracks();
 
       ros::Time getPreviousSrcTime() const;
       ros::Time getCurrentSrcTime() const;
-      void publishTracks();
+      hiros_skeleton_msgs::SkeletonGroup
+      filterByConfidence(const hiros_skeleton_msgs::SkeletonGroup& t_skeleton_group_msg) const;
 
       void fillDetections();
       void createCostMatrix();

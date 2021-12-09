@@ -11,6 +11,9 @@
   <arg name="out_msg_topic_name"              default="track" />
 
   <arg name="fixed_delay"                     default="0"     />
+  <arg name="min_skeleton_confidence"         default="-1"    />
+  <arg name="min_marker_confidence"           default="-1"    />
+  <arg name="min_link_confidence"             default="-1"    />
   <arg name="min_markers"                     default="0"     />
   <arg name="min_links"                       default="0"     />
   <arg name="min_linear_distance"             default="-1"    />
@@ -36,6 +39,10 @@
     <param name="out_msg_topic_name"              type="str"    value="$(arg out_msg_topic_name)"              />
 
     <param name="fixed_delay"                     type="double" value="$(arg fixed_delay)"                     />
+    <param name="min_skeleton_confidence"         type="double" value="$(arg min_skeleton_confidence)"         />
+    <param name="min_marker_confidence"           type="double" value="$(arg min_marker_confidence)"           />
+    <param name="min_link_confidence"             type="double" value="$(arg min_link_confidence)"             />
+    <param name="min_markers"                     type="int"    value="$(arg min_markers)"                     />
     <param name="min_markers"                     type="int"    value="$(arg min_markers)"                     />
     <param name="min_links"                       type="int"    value="$(arg min_links)"                       />
     <param name="min_linear_distance"             type="double" value="$(arg min_linear_distance)"             />
