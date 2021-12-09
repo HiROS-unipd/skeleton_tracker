@@ -115,6 +115,7 @@ void hiros::track::SkeletonTracker::stop()
   }
 
   ROS_INFO_STREAM(BASH_MSG_GREEN << "Hi-ROS Skeleton Tracker...STOPPED" << BASH_MSG_RESET);
+  ros::shutdown();
 }
 
 void hiros::track::SkeletonTracker::setupRosTopics()
@@ -134,6 +135,11 @@ void hiros::track::SkeletonTracker::setupRosTopics()
 
 void hiros::track::SkeletonTracker::detectorCallback(const hiros_skeleton_msgs::SkeletonGroup& t_skeleton_group_msg)
 {
+  if (!ros::ok()) {
+    stop();
+    exit(EXIT_FAILURE);
+  }
+
   if (t_skeleton_group_msg.skeletons.empty() || utils::newestSrcTime(t_skeleton_group_msg) <= getPreviousSrcTime()) {
     return;
   }
