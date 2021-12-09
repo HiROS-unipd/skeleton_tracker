@@ -46,7 +46,8 @@ namespace hiros {
                  const bool& t_weight_by_confidence = false);
 
       double wavg(const double& t_e1, const double& t_e2, const double& t_w1 = 1, const double& t_w2 = 1);
-      tf2::Vector3 wavg(const tf2::Vector3& t_v1, const tf2::Vector3& t_v2, const double& t_w1, const double& t_w2);
+      tf2::Vector3
+      wavg(const tf2::Vector3& t_v1, const tf2::Vector3& t_v2, const double& t_w1 = 1, const double& t_w2 = 1);
       tf2::Quaternion
       wavg(const tf2::Quaternion& t_q1, const tf2::Quaternion& t_q2, const double& t_w1 = 1, const double& t_w2 = 1);
 
