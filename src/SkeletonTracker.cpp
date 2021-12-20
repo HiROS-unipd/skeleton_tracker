@@ -679,7 +679,7 @@ void hiros::track::SkeletonTracker::updateDetectedTrack(const unsigned int& t_tr
 void hiros::track::SkeletonTracker::addNewTrack(const hiros::skeletons::types::Skeleton& t_detection)
 {
   if (t_detection.markers.size() >= static_cast<unsigned int>(m_params.min_markers)
-      || t_detection.links.size() >= static_cast<unsigned int>(m_params.min_links)) {
+      && t_detection.links.size() >= static_cast<unsigned int>(m_params.min_links)) {
     m_tracks.addSkeleton(t_detection);
     auto& new_track = m_tracks.getSkeleton(t_detection.id);
     new_track.id = ++m_last_track_id;
