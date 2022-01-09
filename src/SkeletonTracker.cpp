@@ -463,7 +463,7 @@ double hiros::track::SkeletonTracker::computeMeanDistance(const std::vector<doub
 
   if (n_vel > 0) {
     vel_dist = std::accumulate(t_pos_dist.begin(), t_pos_dist.end(), 0.0, [&](double a, double b) {
-      return a + (std::isnan(b) ? 0. : b / std::pow(n_pos, power));
+      return a + (std::isnan(b) ? 0. : b / std::pow(n_vel, power));
     });
 
     if (std::isnan(pos_dist)) {
