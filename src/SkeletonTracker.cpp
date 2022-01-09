@@ -447,13 +447,9 @@ double hiros::track::SkeletonTracker::computeMeanDistance(const std::vector<doub
   double pos_dist = std::numeric_limits<double>::quiet_NaN();
   double vel_dist = std::numeric_limits<double>::quiet_NaN();
 
-  auto power = t_weighted ? 1.25 : 1;
-
-  // Divide the average distance by n^0.25 to prefer track-detection matches that have an higher number of
-  // markers/links in common
   if (n_pos > 0) {
     pos_dist = std::accumulate(t_pos_dist.begin(), t_pos_dist.end(), 0.0, [&](double a, double b) {
-      return a + (std::isnan(b) ? 0. : b / std::pow(n_pos, power));
+      return a + (std::isnan(b) ? 0. : b / n_pos);
     });
 
     if (std::isnan(vel_dist)) {
@@ -463,7 +459,7 @@ double hiros::track::SkeletonTracker::computeMeanDistance(const std::vector<doub
 
   if (n_vel > 0) {
     vel_dist = std::accumulate(t_pos_dist.begin(), t_pos_dist.end(), 0.0, [&](double a, double b) {
-      return a + (std::isnan(b) ? 0. : b / std::pow(n_vel, power));
+      return a + (std::isnan(b) ? 0. : b / n_vel);
     });
 
     if (std::isnan(pos_dist)) {
