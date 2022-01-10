@@ -679,11 +679,11 @@ void hiros::track::SkeletonTracker::addNewTrack(const hiros::skeletons::types::S
 {
   if (t_detection.markers.size() >= static_cast<unsigned int>(m_params.min_markers)
       && t_detection.links.size() >= static_cast<unsigned int>(m_params.min_links)) {
-    m_tracks.addSkeleton(t_detection);
-    auto& new_track = m_tracks.getSkeleton(t_detection.id);
+    auto new_track = t_detection;
     new_track.id = ++m_last_track_id;
     initializeVelAndAcc(new_track);
     m_track_filters[new_track.id] = Filter(new_track, k_cutoff_frequency);
+    m_tracks.addSkeleton(new_track);
   }
 }
 
