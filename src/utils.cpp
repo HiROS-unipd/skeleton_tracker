@@ -129,12 +129,16 @@ hiros::skeletons::types::Skeleton hiros::track::utils::predict(const hiros::skel
 
 void hiros::track::utils::predict(hiros::skeletons::types::KinematicState& t_state, const double& t_dt)
 {
-  t_state.pose.position += (t_dt * t_state.velocity.linear);
+  if (!skeletons::utils::isNaN(t_state.velocity.linear)) {
+    t_state.pose.position += (t_dt * t_state.velocity.linear);
+  }
 
-  tf2::Quaternion delta_q;
-  auto delta_theta = t_dt * t_state.velocity.angular;
-  delta_q.setEuler(delta_theta.z(), delta_theta.y(), delta_theta.x()); // yaw, pitch, roll
-  t_state.pose.orientation = delta_q * t_state.pose.orientation;
+  if (!skeletons::utils::isNaN(t_state.velocity.angular)) {
+    tf2::Quaternion delta_q;
+    auto delta_theta = t_dt * t_state.velocity.angular;
+    delta_q.setEuler(delta_theta.z(), delta_theta.y(), delta_theta.x()); // yaw, pitch, roll
+    t_state.pose.orientation = delta_q * t_state.pose.orientation;
+  }
 }
 
 void hiros::track::utils::merge(hiros::skeletons::types::Skeleton& t_s1,
