@@ -666,8 +666,11 @@ void hiros::track::SkeletonTracker::updateDetectedTrack(const unsigned int& t_tr
 {
   if (utils::matchMunkres(m_munkres_matrix, t_track_idx, t_det_idx)) {
     int id = m_tracks.skeletons.at(t_track_idx).id;
+
     m_tracks.skeletons.at(t_track_idx) = m_detections.skeletons.at(t_det_idx);
     m_tracks.skeletons.at(t_track_idx).id = id;
+    // Initialize velocity and acceleration for new markers/links
+    initializeVelAndAcc(m_tracks.skeletons.at(t_track_idx));
     m_track_filters[id].updVelAndAcc(m_tracks.skeletons.at(t_track_idx), k_cutoff_frequency);
   }
 }
