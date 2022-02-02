@@ -583,7 +583,7 @@ double hiros::track::SkeletonTracker::computeLinearDistance(const hiros::skeleto
   auto link_dist = computeLinksLinDistance(t_track, t_detection, t_weighted);
 
   if (std::isnan(marker_dist) && std::isnan(link_dist)) {
-    return std::numeric_limits<double>::max();
+    return std::numeric_limits<double>::max() - 1;
   }
 
   if (std::isnan(marker_dist)) {
@@ -610,7 +610,7 @@ double hiros::track::SkeletonTracker::computeAngularDistance(const hiros::skelet
   auto link_dist = computeLinksAngDistance(t_track, t_detection, t_weighted);
 
   if (std::isnan(marker_dist) && std::isnan(link_dist)) {
-    return std::numeric_limits<double>::max();
+    return std::numeric_limits<double>::max() - 1;
   }
 
   if (std::isnan(marker_dist)) {
