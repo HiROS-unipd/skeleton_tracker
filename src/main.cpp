@@ -1,15 +1,8 @@
-// ROS
-#include <ros/ros.h>
+#include "skeleton_tracker/Tracker.h"
 
-// Internal dependencies
-#include "skeleton_tracker/SkeletonTracker.h"
-
-int main(int argc, char* argv[])
-{
-  ros::init(argc, argv, "hiros_skeleton_tracker");
-
-  hiros::track::SkeletonTracker st;
-  st.start();
-
-  return 0;
+int main(int argc, char* argv[]) {
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<hiros::skeletons::Tracker>());
+  rclcpp::shutdown();
+  exit(EXIT_SUCCESS);
 }

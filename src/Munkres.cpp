@@ -1,16 +1,16 @@
 // Internal dependencies
 #include "skeleton_tracker/Munkres.h"
 
-hiros::track::Munkres::Munkres() {}
+hiros::skeletons::Munkres::Munkres() {}
 
-hiros::track::Munkres::~Munkres() {}
+hiros::skeletons::Munkres::~Munkres() {}
 
-cv::Mat_<int> hiros::track::Munkres::solve(const cv::Mat_<double>& t_matrix_in, const bool& t_min)
-{
-  preprocess(t_matrix_in, t_min);
+cv::Mat_<int> hiros::skeletons::Munkres::solve(
+    const cv::Mat_<double>& matrix_in, const bool& min) {
+  preprocess(matrix_in, min);
 
-  while (m_step != Step::done) {
-    switch (m_step) {
+  while (step_ != Step::done) {
+    switch (step_) {
       case Step::one:
         stepOne();
         break;
@@ -41,25 +41,25 @@ cv::Mat_<int> hiros::track::Munkres::solve(const cv::Mat_<double>& t_matrix_in, 
   }
 
   // Conversion from array to cv::Mat
-  m_cv_matrix_out = cv::Mat_<int>(t_matrix_in.rows, t_matrix_in.cols, CV_64F);
-  for (int r = 0; r < t_matrix_in.rows; ++r) {
-    for (int c = 0; c < t_matrix_in.cols; ++c) {
-      m_cv_matrix_out(r, c) = m_matrix_out[static_cast<unsigned int>(r)][static_cast<unsigned int>(c)];
+  cv_matrix_out_ = cv::Mat_<int>(matrix_in.rows, matrix_in.cols, CV_64F);
+  for (auto r{0}; r < matrix_in.rows; ++r) {
+    for (auto c{0}; c < matrix_in.cols; ++c) {
+      cv_matrix_out_(r, c) = matrix_out_[static_cast<unsigned int>(r)]
+                                        [static_cast<unsigned int>(c)];
     }
   }
 
-  return m_cv_matrix_out;
+  return cv_matrix_out_;
 }
 
-bool hiros::track::Munkres::match(const unsigned int& t_row, const unsigned int& t_col) const
-{
-  return (m_matrix_out[t_row][t_col] == 1);
+bool hiros::skeletons::Munkres::match(const unsigned int& row,
+                                      const unsigned int& col) const {
+  return (matrix_out_[row][col] == 1);
 }
 
-bool hiros::track::Munkres::colHasMatch(const unsigned int& t_col) const
-{
-  for (int r = 0; r < m_cv_matrix_out.rows; ++r) {
-    if (m_cv_matrix_out(r, static_cast<int>(t_col)) == 1) {
+bool hiros::skeletons::Munkres::colHasMatch(const unsigned int& col) const {
+  for (auto r{0}; r < cv_matrix_out_.rows; ++r) {
+    if (cv_matrix_out_(r, static_cast<int>(col)) == 1) {
       return true;
     }
   }
@@ -67,10 +67,9 @@ bool hiros::track::Munkres::colHasMatch(const unsigned int& t_col) const
   return false;
 }
 
-int hiros::track::Munkres::findMatchInCol(const unsigned int& t_col) const
-{
-  for (int r = 0; r < m_cv_matrix_out.rows; ++r) {
-    if (m_cv_matrix_out(r, static_cast<int>(t_col)) == 1) {
+int hiros::skeletons::Munkres::findMatchInCol(const unsigned int& col) const {
+  for (auto r{0}; r < cv_matrix_out_.rows; ++r) {
+    if (cv_matrix_out_(r, static_cast<int>(col)) == 1) {
       return r;
     }
   }
@@ -78,10 +77,9 @@ int hiros::track::Munkres::findMatchInCol(const unsigned int& t_col) const
   return -1;
 }
 
-bool hiros::track::Munkres::rowHasMatch(const unsigned int& t_row) const
-{
-  for (int c = 0; c < m_cv_matrix_out.cols; ++c) {
-    if (m_cv_matrix_out(static_cast<int>(t_row), c) == 1) {
+bool hiros::skeletons::Munkres::rowHasMatch(const unsigned int& row) const {
+  for (auto c{0}; c < cv_matrix_out_.cols; ++c) {
+    if (cv_matrix_out_(static_cast<int>(row), c) == 1) {
       return true;
     }
   }
@@ -89,10 +87,9 @@ bool hiros::track::Munkres::rowHasMatch(const unsigned int& t_row) const
   return false;
 }
 
-int hiros::track::Munkres::findMatchInRow(const unsigned int& t_row) const
-{
-  for (int c = 0; c < m_cv_matrix_out.cols; ++c) {
-    if (m_cv_matrix_out(static_cast<int>(t_row), c) == 1) {
+int hiros::skeletons::Munkres::findMatchInRow(const unsigned int& row) const {
+  for (auto c{0}; c < cv_matrix_out_.cols; ++c) {
+    if (cv_matrix_out_(static_cast<int>(row), c) == 1) {
       return c;
     }
   }
@@ -100,131 +97,127 @@ int hiros::track::Munkres::findMatchInRow(const unsigned int& t_row) const
   return -1;
 }
 
-void hiros::track::Munkres::preprocess(const cv::Mat_<double>& t_matrix_in, const bool& t_min)
-{
-  m_path_row_0 = 0;
-  m_path_col_0 = 0;
-  m_path_count = 0;
+void hiros::skeletons::Munkres::preprocess(const cv::Mat_<double>& matrix_in,
+                                           const bool& min) {
+  path_row_0_ = 0;
+  path_col_0_ = 0;
+  path_count_ = 0;
 
-  m_step = Step::one;
+  step_ = Step::one;
 
-  m_max_dim = static_cast<unsigned int>(std::max(t_matrix_in.rows, t_matrix_in.cols));
-  m_rows = m_max_dim;
-  m_cols = m_max_dim;
+  max_dim_ =
+      static_cast<unsigned int>(std::max(matrix_in.rows, matrix_in.cols));
+  rows_ = max_dim_;
+  cols_ = max_dim_;
 
   // Pad input matrix with max matrix value to make it square
-  m_cv_matrix_in_padded =
-    cv::Mat_<double>(static_cast<int>(m_rows), static_cast<int>(m_cols), getMaxValue(t_matrix_in));
+  cv_matrix_in_padded_ = cv::Mat_<double>(
+      static_cast<int>(rows_), static_cast<int>(cols_), getMaxValue(matrix_in));
 
-  for (int r = 0; r < t_matrix_in.rows; ++r) {
-    for (int c = 0; c < t_matrix_in.cols; ++c) {
-      m_cv_matrix_in_padded(r, c) = t_matrix_in(r, c);
+  for (auto r{0}; r < matrix_in.rows; ++r) {
+    for (auto c{0}; c < matrix_in.cols; ++c) {
+      cv_matrix_in_padded_(r, c) = matrix_in(r, c);
     }
   }
 
   initializeVectors();
 
-  // Change cost matrix according to the type of optimum to find (minimum or maximum)
-  if (!t_min) {
-    double max_val = getMaxValue(m_matrix_in);
+  // Change cost matrix according to the type of optimum to find (minimum or
+  // maximum)
+  if (!min) {
+    auto max_val{getMaxValue(matrix_in_)};
 
-    for (unsigned int r = 0; r < m_rows; ++r) {
-      for (unsigned int c = 0; c < m_cols; ++c) {
-        m_matrix_in[r][c] = max_val - m_matrix_in[r][c];
+    for (auto r{0u}; r < rows_; ++r) {
+      for (auto c{0u}; c < cols_; ++c) {
+        matrix_in_[r][c] = max_val - matrix_in_[r][c];
       }
     }
   }
 }
 
-void hiros::track::Munkres::initializeVectors()
-{
-  m_matrix_in.resize(m_rows);
-  m_matrix_out.resize(m_rows);
-  m_path.resize(m_rows * m_cols, std::vector<unsigned int>(2));
-  m_row_cover.resize(m_rows);
-  m_col_cover.resize(m_cols);
+void hiros::skeletons::Munkres::initializeVectors() {
+  matrix_in_.resize(rows_);
+  matrix_out_.resize(rows_);
+  path_.resize(rows_ * cols_, std::vector<unsigned int>(2));
+  row_cover_.resize(rows_);
+  col_cover_.resize(cols_);
 
-  for (unsigned int r = 0; r < m_rows; ++r) {
-    m_matrix_in[r].resize(m_cols);
-    m_matrix_out[r].resize(m_cols);
+  for (auto r{0u}; r < rows_; ++r) {
+    matrix_in_[r].resize(cols_);
+    matrix_out_[r].resize(cols_);
 
-    m_matrix_in[r] = m_cv_matrix_in_padded.row(static_cast<int>(r));
-    std::fill(m_matrix_out[r].begin(), m_matrix_out[r].end(), 0);
+    matrix_in_[r] = cv_matrix_in_padded_.row(static_cast<int>(r));
+    std::fill(matrix_out_[r].begin(), matrix_out_[r].end(), 0);
   }
 
-  for (auto& p : m_path) {
+  for (auto& p : path_) {
     std::fill(p.begin(), p.end(), 0);
   }
 
-  std::fill(m_row_cover.begin(), m_row_cover.end(), 0);
-  std::fill(m_col_cover.begin(), m_col_cover.end(), 0);
+  std::fill(row_cover_.begin(), row_cover_.end(), 0);
+  std::fill(col_cover_.begin(), col_cover_.end(), 0);
 }
 
-void hiros::track::Munkres::stepOne()
-{
-  double min_in_row;
+void hiros::skeletons::Munkres::stepOne() {
+  double min_in_row{};
 
-  for (unsigned int r = 0; r < m_rows; ++r) {
+  for (auto r{0u}; r < rows_; ++r) {
     min_in_row = getMinInRow(r);
 
-    for (unsigned int c = 0; c < m_cols; ++c) {
-      m_matrix_in[r][c] -= min_in_row;
+    for (auto c{0u}; c < cols_; ++c) {
+      matrix_in_[r][c] -= min_in_row;
     }
   }
 
-  m_step = Step::two;
+  step_ = Step::two;
 }
 
-void hiros::track::Munkres::stepTwo()
-{
-  for (unsigned int r = 0; r < m_rows; ++r) {
-    for (unsigned int c = 0; c < m_cols; ++c) {
-      if (m_matrix_in[r][c] == 0. && m_row_cover[r] == 0 && m_col_cover[c] == 0) {
-        m_matrix_out[r][c] = 1;
-        m_row_cover[r] = 1;
-        m_col_cover[c] = 1;
+void hiros::skeletons::Munkres::stepTwo() {
+  for (auto r{0u}; r < rows_; ++r) {
+    for (auto c{0u}; c < cols_; ++c) {
+      if (matrix_in_[r][c] == 0. && row_cover_[r] == 0 && col_cover_[c] == 0) {
+        matrix_out_[r][c] = 1;
+        row_cover_[r] = 1;
+        col_cover_[c] = 1;
       }
     }
   }
 
-  for (unsigned int r = 0; r < m_rows; ++r) {
-    m_row_cover[r] = 0;
+  for (auto r{0u}; r < rows_; ++r) {
+    row_cover_[r] = 0;
   }
 
-  for (unsigned int c = 0; c < m_cols; ++c) {
-    m_col_cover[c] = 0;
+  for (auto c{0u}; c < cols_; ++c) {
+    col_cover_[c] = 0;
   }
 
-  m_step = Step::three;
+  step_ = Step::three;
 }
 
-void hiros::track::Munkres::stepThree()
-{
-  unsigned int col_count = 0;
+void hiros::skeletons::Munkres::stepThree() {
+  auto col_count{0u};
 
-  for (unsigned int r = 0; r < m_rows; ++r) {
-    for (unsigned int c = 0; c < m_cols; ++c) {
-      if (m_matrix_out[r][c] == 1) {
-        m_col_cover[c] = 1;
+  for (auto r{0u}; r < rows_; ++r) {
+    for (auto c{0u}; c < cols_; ++c) {
+      if (matrix_out_[r][c] == 1) {
+        col_cover_[c] = 1;
         ++col_count;
         break;
       }
     }
   }
 
-  if (col_count >= m_rows || col_count >= m_cols) {
-    m_step = Step::done;
-  }
-  else {
-    m_step = Step::four;
+  if (col_count >= rows_ || col_count >= cols_) {
+    step_ = Step::done;
+  } else {
+    step_ = Step::four;
   }
 }
 
-void hiros::track::Munkres::stepFour()
-{
-  bool done = false;
-  int r = -1;
-  int c = -1;
+void hiros::skeletons::Munkres::stepFour() {
+  auto done{false};
+  auto r{-1};
+  auto c{-1};
 
   while (!done) {
     findZero(r, c);
@@ -232,54 +225,51 @@ void hiros::track::Munkres::stepFour()
     if (r == -1) {
       done = true;
 
-      m_step = Step::six;
-    }
-    else {
-      m_matrix_out[static_cast<unsigned int>(r)][static_cast<unsigned int>(c)] = 2;
+      step_ = Step::six;
+    } else {
+      matrix_out_[static_cast<unsigned int>(r)][static_cast<unsigned int>(c)] =
+          2;
 
       if (starInRow(static_cast<unsigned int>(r))) {
         c = findStarInRow(static_cast<unsigned int>(r));
 
-        m_row_cover[static_cast<unsigned int>(r)] = 1;
-        m_col_cover[static_cast<unsigned int>(c)] = 0;
-      }
-      else {
+        row_cover_[static_cast<unsigned int>(r)] = 1;
+        col_cover_[static_cast<unsigned int>(c)] = 0;
+      } else {
         done = true;
-        m_path_row_0 = static_cast<unsigned int>(r);
-        m_path_col_0 = static_cast<unsigned int>(c);
+        path_row_0_ = static_cast<unsigned int>(r);
+        path_col_0_ = static_cast<unsigned int>(c);
 
-        m_step = Step::five;
+        step_ = Step::five;
       }
     }
   }
 }
 
-void hiros::track::Munkres::stepFive()
-{
-  bool done = false;
-  int r = -1;
-  int c = -1;
+void hiros::skeletons::Munkres::stepFive() {
+  auto done{false};
+  auto r{-1};
+  auto c{-1};
 
-  m_path_count = 1;
-  m_path[m_path_count - 1][0] = m_path_row_0;
-  m_path[m_path_count - 1][1] = m_path_col_0;
+  path_count_ = 1;
+  path_[path_count_ - 1][0] = path_row_0_;
+  path_[path_count_ - 1][1] = path_col_0_;
 
   while (!done) {
-    r = findStarInCol(m_path[m_path_count - 1][1]);
+    r = findStarInCol(path_[path_count_ - 1][1]);
     if (r != -1) {
-      ++m_path_count;
-      m_path[m_path_count - 1][0] = static_cast<unsigned int>(r);
-      m_path[m_path_count - 1][1] = m_path[m_path_count - 2][1];
-    }
-    else {
+      ++path_count_;
+      path_[path_count_ - 1][0] = static_cast<unsigned int>(r);
+      path_[path_count_ - 1][1] = path_[path_count_ - 2][1];
+    } else {
       done = true;
     }
 
     if (!done) {
-      c = findPrimeInRow(m_path[m_path_count - 1][0]);
-      ++m_path_count;
-      m_path[m_path_count - 1][0] = m_path[m_path_count - 2][0];
-      m_path[m_path_count - 1][1] = static_cast<unsigned int>(c);
+      c = findPrimeInRow(path_[path_count_ - 1][0]);
+      ++path_count_;
+      path_[path_count_ - 1][0] = path_[path_count_ - 2][0];
+      path_[path_count_ - 1][1] = static_cast<unsigned int>(c);
     }
   }
 
@@ -287,37 +277,36 @@ void hiros::track::Munkres::stepFive()
   clearCovers();
   erasePrimes();
 
-  m_step = Step::three;
+  step_ = Step::three;
 }
 
-void hiros::track::Munkres::stepSix()
-{
-  double minval = getMinValue();
+void hiros::skeletons::Munkres::stepSix() {
+  auto minval{getMinValue()};
 
-  for (unsigned int r = 0; r < m_rows; ++r) {
-    for (unsigned int c = 0; c < m_cols; ++c) {
-      if (m_row_cover[r] == 1) {
-        m_matrix_in[r][c] += minval;
+  for (auto r{0u}; r < rows_; ++r) {
+    for (auto c{0u}; c < cols_; ++c) {
+      if (row_cover_[r] == 1) {
+        matrix_in_[r][c] += minval;
       }
 
-      if (m_col_cover[c] == 0) {
-        m_matrix_in[r][c] -= minval;
+      if (col_cover_[c] == 0) {
+        matrix_in_[r][c] -= minval;
       }
     }
   }
 
-  m_step = Step::four;
+  step_ = Step::four;
 }
 
-double hiros::track::Munkres::getMaxValue(const std::vector<std::vector<double>>& t_mat) const
-{
-  if (t_mat.empty()) {
+double hiros::skeletons::Munkres::getMaxValue(
+    const std::vector<std::vector<double>>& mat) const {
+  if (mat.empty()) {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  double max_val = std::numeric_limits<double>::lowest();
+  auto max_val{std::numeric_limits<double>::lowest()};
 
-  for (auto& row : t_mat) {
+  for (auto& row : mat) {
     for (auto& elem : row) {
       max_val = std::max(max_val, elem);
     }
@@ -326,51 +315,49 @@ double hiros::track::Munkres::getMaxValue(const std::vector<std::vector<double>>
   return max_val;
 }
 
-double hiros::track::Munkres::getMaxValue(const cv::Mat_<double>& t_mat) const
-{
-  if (t_mat.empty()) {
+double hiros::skeletons::Munkres::getMaxValue(
+    const cv::Mat_<double>& mat) const {
+  if (mat.empty()) {
     return std::numeric_limits<double>::quiet_NaN();
   }
 
-  double max_val = std::numeric_limits<double>::lowest();
+  auto max_val{std::numeric_limits<double>::lowest()};
 
-  for (auto& elem : t_mat) {
+  for (auto& elem : mat) {
     max_val = std::max(max_val, elem);
   }
 
   return max_val;
 }
 
-double hiros::track::Munkres::getMinInRow(const unsigned int& t_row) const
-{
-  double min_val = std::numeric_limits<double>::max();
+double hiros::skeletons::Munkres::getMinInRow(const unsigned int& row) const {
+  auto min_val{std::numeric_limits<double>::max()};
 
-  for (auto& elem : m_matrix_in[t_row]) {
+  for (auto& elem : matrix_in_[row]) {
     min_val = std::min(min_val, elem);
   }
 
   return min_val;
 }
 
-void hiros::track::Munkres::findZero(int& t_row, int& t_col) const
-{
-  t_row = -1;
-  t_col = -1;
+void hiros::skeletons::Munkres::findZero(int& row, int& col) const {
+  row = -1;
+  col = -1;
 
-  for (unsigned int r = 0; r < m_rows; ++r) {
-    t_col = findZeroInRow(r);
+  for (auto r{0u}; r < rows_; ++r) {
+    col = findZeroInRow(r);
 
-    if (t_col != -1) {
-      t_row = static_cast<int>(r);
+    if (col != -1) {
+      row = static_cast<int>(r);
       break;
     }
   }
 }
 
-int hiros::track::Munkres::findZeroInRow(const unsigned int& t_row) const
-{
-  for (unsigned int c = 0; c < m_cols; ++c) {
-    if (m_matrix_in[t_row][c] == 0. && m_row_cover[t_row] == 0 && m_col_cover[c] == 0) {
+int hiros::skeletons::Munkres::findZeroInRow(const unsigned int& row) const {
+  for (auto c{0u}; c < cols_; ++c) {
+    if (matrix_in_[row][c] == 0. && row_cover_[row] == 0 &&
+        col_cover_[c] == 0) {
       return static_cast<int>(c);
     }
   }
@@ -378,10 +365,9 @@ int hiros::track::Munkres::findZeroInRow(const unsigned int& t_row) const
   return -1;
 }
 
-bool hiros::track::Munkres::starInRow(const unsigned int& t_row) const
-{
-  for (unsigned int c = 0; c < m_cols; ++c) {
-    if (m_matrix_out[t_row][c] == 1) {
+bool hiros::skeletons::Munkres::starInRow(const unsigned int& row) const {
+  for (auto c{0u}; c < cols_; ++c) {
+    if (matrix_out_[row][c] == 1) {
       return true;
     }
   }
@@ -389,10 +375,9 @@ bool hiros::track::Munkres::starInRow(const unsigned int& t_row) const
   return false;
 }
 
-int hiros::track::Munkres::findStarInRow(const unsigned int& t_row) const
-{
-  for (unsigned int c = 0; c < m_cols; ++c) {
-    if (m_matrix_out[t_row][c] == 1) {
+int hiros::skeletons::Munkres::findStarInRow(const unsigned int& row) const {
+  for (auto c{0u}; c < cols_; ++c) {
+    if (matrix_out_[row][c] == 1) {
       return static_cast<int>(c);
     }
   }
@@ -400,10 +385,9 @@ int hiros::track::Munkres::findStarInRow(const unsigned int& t_row) const
   return -1;
 }
 
-int hiros::track::Munkres::findStarInCol(const unsigned int& t_col) const
-{
-  for (unsigned int r = 0; r < m_rows; ++r) {
-    if (m_matrix_out[r][t_col] == 1) {
+int hiros::skeletons::Munkres::findStarInCol(const unsigned int& col) const {
+  for (auto r{0u}; r < rows_; ++r) {
+    if (matrix_out_[r][col] == 1) {
       return static_cast<int>(r);
     }
   }
@@ -411,10 +395,9 @@ int hiros::track::Munkres::findStarInCol(const unsigned int& t_col) const
   return -1;
 }
 
-int hiros::track::Munkres::findPrimeInRow(const unsigned int& t_row) const
-{
-  for (unsigned int c = 0; c < m_cols; ++c) {
-    if (m_matrix_out[t_row][c] == 2) {
+int hiros::skeletons::Munkres::findPrimeInRow(const unsigned int& row) const {
+  for (auto c{0u}; c < cols_; ++c) {
+    if (matrix_out_[row][c] == 2) {
       return static_cast<int>(c);
     }
   }
@@ -422,14 +405,13 @@ int hiros::track::Munkres::findPrimeInRow(const unsigned int& t_row) const
   return -1;
 }
 
-double hiros::track::Munkres::getMinValue() const
-{
-  double min_val = std::numeric_limits<double>::max();
+double hiros::skeletons::Munkres::getMinValue() const {
+  auto min_val{std::numeric_limits<double>::max()};
 
-  for (unsigned int r = 0; r < m_rows; ++r) {
-    for (unsigned int c = 0; c < m_cols; ++c) {
-      if (m_row_cover[r] == 0 && m_col_cover[c] == 0) {
-        min_val = std::min(min_val, m_matrix_in[r][c]);
+  for (auto r{0u}; r < rows_; ++r) {
+    for (auto c{0u}; c < cols_; ++c) {
+      if (row_cover_[r] == 0 && col_cover_[c] == 0) {
+        min_val = std::min(min_val, matrix_in_[r][c]);
       }
     }
   }
@@ -437,27 +419,23 @@ double hiros::track::Munkres::getMinValue() const
   return min_val;
 }
 
-void hiros::track::Munkres::augmentPath()
-{
-  for (unsigned int p = 0; p < m_path_count; ++p) {
-    if (m_matrix_out[m_path[p][0]][m_path[p][1]] == 1) {
-      m_matrix_out[m_path[p][0]][m_path[p][1]] = 0;
-    }
-    else {
-      m_matrix_out[m_path[p][0]][m_path[p][1]] = 1;
+void hiros::skeletons::Munkres::augmentPath() {
+  for (auto p{0u}; p < path_count_; ++p) {
+    if (matrix_out_[path_[p][0]][path_[p][1]] == 1) {
+      matrix_out_[path_[p][0]][path_[p][1]] = 0;
+    } else {
+      matrix_out_[path_[p][0]][path_[p][1]] = 1;
     }
   }
 }
 
-void hiros::track::Munkres::clearCovers()
-{
-  std::fill(m_row_cover.begin(), m_row_cover.end(), 0);
-  std::fill(m_col_cover.begin(), m_col_cover.end(), 0);
+void hiros::skeletons::Munkres::clearCovers() {
+  std::fill(row_cover_.begin(), row_cover_.end(), 0);
+  std::fill(col_cover_.begin(), col_cover_.end(), 0);
 }
 
-void hiros::track::Munkres::erasePrimes()
-{
-  for (auto& row : m_matrix_out) {
+void hiros::skeletons::Munkres::erasePrimes() {
+  for (auto& row : matrix_out_) {
     for (auto& elem : row) {
       if (elem == 2) {
         elem = 0;

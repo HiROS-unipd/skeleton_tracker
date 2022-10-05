@@ -1,19 +1,27 @@
 <?xml version="1.0"?>
-<package format="2">
+<?xml-model
+   href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+
+<package format="3">
   <name>hiros_skeleton_tracker</name>
   <version>0.1.0</version>
   <description>Hi-ROS mantained skeleton tracker package</description>
-  <maintainer email="mattia.guidolin@phd.unipd.it">mguidolin @ Hi-ROS</maintainer>
-  <maintainer email="luca.tagliapietra@unipd.it">lucaTagliapietra @ Hi-ROS</maintainer>
-  <license>TODO</license>
+  <maintainer email="mattia.guidolin@unipd.it">mguidolin @ Hi-ROS</maintainer>
+  <license>Apache License 2.0</license>
 
-  <url type="website">https://gitlab.com/hi-ros</url>
-  <author email="mattia.guidolin@phd.unipd.it">Mattia Guidolin</author>
-  <author email="luca.tagliapietra@unipd.it">Luca Tagliapietra</author>
-  
-  <buildtool_depend>catkin</buildtool_depend>
+  <url type="website">https://github.com/hiros-unipd</url>
+  <author email="mattia.guidolin@unipd.it">Mattia Guidolin</author>
 
-  <depend>roscpp</depend>
-  <depend>std_msgs</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+  <depend>rclcpp</depend>
   <depend>hiros_skeleton_msgs</depend>
+  <depend>hiros_skeleton_filter</depend>
 </package>

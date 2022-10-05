@@ -2,26 +2,17 @@
 
 This ROS package takes as input multiple SkeletonGroup messages, where each topic represents a separate detector, and assigns to each skeleton a proper ID by performing frame-by-frame tracking.
 
+
 ## Dependencies
 * [Hi-ROS Skeleton Messages](https://github.com/hiros-unipd/skeleton_msgs)
-
-
-## Launch files
-**default.launch**
-Contains the default values for each parameter
-
-**custom\_configuration\_example.launch**
-Contains an example on how to set some parameters of choice
+* [Hi-ROS Skeleton Filter](https://github.com/hiros-unipd/skeleton_filter)
 
 
 ## Parameters
-
 | Parameter                         | Description                                                                                                                                               |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `node_required`                   | Set if the other ROS nodes on the PC should be killed when the driver is killed                                                                           |
-| `node_name`                       | Name of the ROS node                                                                                                                                      |
-| `in_skeleton_group_topics`        | Topics published by all the detectors in the network                                                                                                      |
-| `out_msg_topic_name`              | Name of the topic that will be published containing the tracked skeletons                                                                                 |
+| `input_topics`                    | Topics published by all the detectors in the network                                                                                                      |
+| `output_topic`                    | Name of the topic that will be published containing the tracked skeletons                                                                                 |
 | `fixed_delay`                     | Fixed delay to apply before tracking a detection (avoid possible source time inconsistencies when using multiple detectors)                               |
 | `min_skeleton_confidence`         | Minimum acceptable skeletons confidence                                                                                                                   |
 | `min_marker_confidence`           | Minimum acceptable markers confidence                                                                                                                     |
@@ -44,5 +35,5 @@ Contains an example on how to set some parameters of choice
 
 ## Usage
 ```
-roslaunch hiros_skeleton_tracker custom_configuration_example.launch
+ros2 launch hiros_skeleton_tracker default.launch.py
 ```

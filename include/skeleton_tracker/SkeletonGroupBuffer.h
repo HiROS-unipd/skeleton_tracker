@@ -5,37 +5,36 @@
 #include <map>
 
 // ROS dependencies
-#include "ros/time.h"
+#include <rclcpp/time.hpp>
 
 // Custom external dependencies
-#include "hiros_skeleton_msgs/SkeletonGroup.h"
+#include "hiros_skeleton_msgs/msg/skeleton_group.hpp"
 
 namespace hiros {
-  namespace track {
+namespace skeletons {
 
-    class SkeletonGroupBuffer
-    {
-    public:
-      SkeletonGroupBuffer(const double& t_dt_epsilon = 0.001);
+class SkeletonGroupBuffer {
+ public:
+  SkeletonGroupBuffer(const double& dt_epsilon = 0.001);
 
-      size_t size() const;
-      bool empty() const;
+  size_t size() const;
+  bool empty() const;
 
-      void push_back(const hiros_skeleton_msgs::SkeletonGroup& t_msg);
-      void pop_front();
-      void erase_until_time(const ros::Time& t_time);
+  void push_back(const hiros_skeleton_msgs::msg::SkeletonGroup& msg);
+  void pop_front();
+  void erase_until_time(const rclcpp::Time& time);
 
-      ros::Time get_src_time() const;
-      std::string get_src_frame() const;
-      const hiros_skeleton_msgs::SkeletonGroup& get_skeleton_group() const;
-      hiros_skeleton_msgs::SkeletonGroup& get_skeleton_group();
+  rclcpp::Time get_src_time() const;
+  std::string get_src_frame() const;
+  const hiros_skeleton_msgs::msg::SkeletonGroup& get_skeleton_group() const;
+  hiros_skeleton_msgs::msg::SkeletonGroup& get_skeleton_group();
 
-    private:
-      const double DT_EPSILON{0.001};
-      std::map<ros::Time, hiros_skeleton_msgs::SkeletonGroup> m_buffer{};
-    };
+ private:
+  const double DT_EPSILON{};
+  std::map<rclcpp::Time, hiros_skeleton_msgs::msg::SkeletonGroup> buffer_{};
+};
 
-  } // namespace track
-} // namespace hiros
+}  // namespace skeletons
+}  // namespace hiros
 
 #endif
