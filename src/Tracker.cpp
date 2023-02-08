@@ -18,15 +18,13 @@ hiros::skeletons::Tracker::~Tracker() { stop(); }
 void hiros::skeletons::Tracker::start() {
   configure();
 
-  RCLCPP_INFO_STREAM(get_logger(), BASH_MSG_GREEN
-                                       << "Hi-ROS Skeleton Tracker... RUNNING"
-                                       << BASH_MSG_RESET);
+  RCLCPP_INFO_STREAM(get_logger(),
+                     BASH_MSG_GREEN << "Running" << BASH_MSG_RESET);
 }
 
 void hiros::skeletons::Tracker::stop() const {
-  RCLCPP_INFO_STREAM(get_logger(), BASH_MSG_GREEN
-                                       << "Hi-ROS Skeleton Tracker... STOPPED"
-                                       << BASH_MSG_RESET);
+  RCLCPP_INFO_STREAM(get_logger(),
+                     BASH_MSG_GREEN << "Stopped" << BASH_MSG_RESET);
 
   rclcpp::shutdown();
 }
@@ -109,8 +107,7 @@ void hiros::skeletons::Tracker::checkFrameIdConsistency(
                      }) != received_frames_.end()) {
       RCLCPP_FATAL_STREAM(
           get_logger(),
-          "Hi-ROS Skeleton Tracker Error: Data must be expressed w.r.t the "
-          "same reference frame");
+          "Data must be expressed w.r.t the same reference frame");
       stop();
       exit(EXIT_FAILURE);
     }
@@ -317,8 +314,8 @@ void hiros::skeletons::Tracker::removeUnassociatedTracks() {
     if (unassociatedTrack(track_idx)) {
       id = tracks_.skeletons.at(track_idx).id;
       delta_t = getCurrentSrcTime() -
-                rclcpp::Time(static_cast<long>(
-                    tracks_.skeletons.at(track_idx).src_time * 1e9));
+                rclcpp::Time{static_cast<long>(
+                    tracks_.skeletons.at(track_idx).src_time * 1e9)};
 
       if (delta_t > params_.max_delta_t) {
         tracks_.removeSkeleton(id);

@@ -335,7 +335,7 @@ rclcpp::Time hiros::skeletons::utils::avgSrcTime(
     ++n_elems;
   }
 
-  return rclcpp::Time(static_cast<long>(sum / n_elems * 1e9));
+  return rclcpp::Time{static_cast<long>(sum / n_elems * 1e9)};
 }
 
 rclcpp::Time hiros::skeletons::utils::avgSrcTime(
@@ -349,13 +349,13 @@ rclcpp::Time hiros::skeletons::utils::oldestSrcTime(
     return rclcpp::Time();
   }
 
-  return rclcpp::Time(static_cast<long>(
+  return rclcpp::Time{static_cast<long>(
       std::min_element(skel_group.skeletons.begin(), skel_group.skeletons.end(),
                        [](const auto& lhs, const auto& rhs) {
                          return lhs.src_time < rhs.src_time;
                        })
           ->src_time *
-      1e9));
+      1e9)};
 }
 
 rclcpp::Time hiros::skeletons::utils::oldestSrcTime(
@@ -369,13 +369,13 @@ rclcpp::Time hiros::skeletons::utils::newestSrcTime(
     return rclcpp::Time();
   }
 
-  return rclcpp::Time(static_cast<long>(
+  return rclcpp::Time{static_cast<long>(
       std::max_element(skel_group.skeletons.begin(), skel_group.skeletons.end(),
                        [](const auto& lhs, const auto& rhs) {
                          return lhs.src_time < rhs.src_time;
                        })
           ->src_time *
-      1e9));
+      1e9)};
 }
 
 rclcpp::Time hiros::skeletons::utils::newestSrcTime(
