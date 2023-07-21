@@ -218,7 +218,7 @@ void hiros::skeletons::utils::alignLinkOrientation(
           .normalized()};
 
   auto rot_axis{quat_axis.cross(link_axis).normalized()};
-  auto rot_angle{acos(std::min(std::max(-1., quat_axis.dot(link_axis)), 1.))};
+  auto rot_angle{acos(std::clamp(quat_axis.dot(link_axis), -1., 1.))};
   // Rotation to align the link orientation to the link axis
   auto rot_quat{tf2::Quaternion(rot_axis, rot_angle)};
 
