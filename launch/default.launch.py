@@ -1,16 +1,17 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
+
 def generate_launch_description():
     ld = LaunchDescription()
 
-    node=Node(
-        package = 'hiros_skeleton_tracker',
-        executable = 'hiros_skeleton_tracker',
-        name = 'skeleton_tracker',
+    node = Node(
+        package='hiros_skeleton_tracker',
+        executable='hiros_skeleton_tracker',
+        name='skeleton_tracker',
         namespace='hiros',
-        output = 'screen',
-        parameters = [
+        output='screen',
+        parameters=[
             {'input_topics': ['/input/topic1', '/input/topic2']},
             {'output_topic': '/output/topic'},
             {'fixed_delay': 0.},
